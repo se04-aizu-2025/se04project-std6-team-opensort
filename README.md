@@ -4,4 +4,4 @@ The objective of the engineering topic is to develop software that provides a va
 intended as a programming or algorithmic teaching tool.
 
 ## Language used
-The project will be deveoped in Java.
+The project will be developed in Java.
