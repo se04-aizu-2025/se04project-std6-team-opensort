@@ -58,7 +58,31 @@ public class HeapSort extends SortingAlgorithm{
     }
 
     public int[] sort(){
-        return null;
+        int[] array = numbers.clone();
+
+        // Get the last non leaf node element of the heap
+        int root = parentNode(array.length);
+        int first = 0;
+        int last = array.length - 1;
+
+        // Loop over all non leaf node elements and build the heap
+        for (int i = root; i >= 0; i--){
+            heapify(array, first, last, i);
+        }
+
+        // Loop over all elements of the heap
+        for (int i = last; i>first;i--){
+            // Swap the current root with the last element of the non sorted heap
+            int temp = array[first];
+            array[first] = array[i];
+            array[i] = temp;
+
+            // Rebuild the heap but ignore the new last value
+            // This element is already sorted
+            heapify(array, first, i-1, first);
+        }
+
+        return array;
     }
 
 }
