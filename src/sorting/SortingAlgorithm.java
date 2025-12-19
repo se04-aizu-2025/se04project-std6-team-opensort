@@ -1,6 +1,7 @@
 package com.opensort.sorting;
 
 // Abstract class to represent a sorting algorithm
+// This is the model of the software
 public abstract class SortingAlgorithm{
     
     // Array of unsorted numbers
