@@ -1,3 +1,5 @@
+package com.opensort.sorting;
+
 public class mergeSort extends SortingAlgorithm{
 
     public mergeSort(int[] numbers){

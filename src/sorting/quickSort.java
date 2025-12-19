@@ -1,3 +1,5 @@
+package com.opensort.sorting;
+
 public class quickSort extends SortingAlgorithm{
 
     public quickSort(int[] numbers){
