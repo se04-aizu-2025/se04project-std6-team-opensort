@@ -7,4 +7,7 @@ public interface IView {
 
     // Allow the view to react to events from the currently used sorting algorithm
     public void onSortEvent(SortEvent event);
+
+    // Tell the view what array it should display
+    public void setArray(int[] array);
 }
