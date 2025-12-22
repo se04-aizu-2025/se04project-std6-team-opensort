@@ -1,5 +1,7 @@
 package com.opensort;
 import com.opensort.sorting.*;
+import com.opensort.view.IView;
+import com.opensort.view.ConsoleView;
 
 class Main{
     public static void main(String[] args){
@@ -8,10 +10,11 @@ class Main{
 
         SortingAlgorithm h = new BubbleSort(test);
 
-        int[] result = h.sort();
+        IView view = new ConsoleView();
+        view.setArray(test);
 
-        for(int i = 0; i < result.length; i++){
-            System.out.println(result[i]);
-        } 
+        h.addEventListener(view);
+
+        int[] result = h.sort();
     }
 }
