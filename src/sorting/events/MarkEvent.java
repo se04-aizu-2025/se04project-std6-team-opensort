@@ -5,17 +5,19 @@ public class MarkEvent extends SortEvent{
 
     private final int a;
     private final String message;
+    private final MarkEventType type;
 
     // Mark the element at index a
     // Provide an additional message with further context like 'Element x has been sorted'
-    public MarkEvent(int a, String message){
+    public MarkEvent(int a, MarkEventType type, String message){
         this.a = a;
+        this.type = type;
         this.message = message;
     }
 
     // Mark the element at index a
-    public MarkEvent(int a){
-        this(a, "");
+    public MarkEvent(int a, MarkEventType type){
+        this(a, type, "");
     }
 
     public int getA(){
@@ -26,4 +28,7 @@ public class MarkEvent extends SortEvent{
         return message;
     }
 
+    public MarkEventType getType() {
+        return type;
+    }
 }
