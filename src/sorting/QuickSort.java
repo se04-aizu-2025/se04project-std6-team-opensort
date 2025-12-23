@@ -1,8 +1,8 @@
 package com.opensort.sorting;
 
-public class quickSort extends SortingAlgorithm{
+public class QuickSort extends SortingAlgorithm{
 
-    public quickSort(int[] numbers){
+    public QuickSort(int[] numbers){
         super(numbers);
     }
 
