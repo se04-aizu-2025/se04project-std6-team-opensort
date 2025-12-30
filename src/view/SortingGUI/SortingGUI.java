@@ -11,20 +11,19 @@ import java.awt.*;
 public class SortingGUI extends JFrame implements IView {
 
     //UI Components
-    private VisualizerPanel panel; // The area where bars are drawn
+    private VisualizerPanel panel; 
     private JButton generateBtn, sortBtn;
     private JComboBox<String> algoBox;
     private JSlider speedSlider;
 
     //Data & State
-    private int[] array; // The data we are sorting
+    private int[] array; 
     private DataGenerator generator;
-    private volatile boolean isSorting = false; // Flag to prevent running two sorts at once
+    private volatile boolean isSorting = false; 
 
     public SortingGUI() {
         // Initialize data generator and default array
         this.generator = new DataGenerator();
-        // Create 50 random numbers between 10 and 400
         this.array = generator.generateRandom(50, 10, 400); 
         initUI();
     }
@@ -34,7 +33,7 @@ public class SortingGUI extends JFrame implements IView {
         setTitle("OpenSort Visualizer");
         setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout()); // Layout manager for the window
+        setLayout(new BorderLayout()); 
 
         // Add the drawing panel to the center
         panel = new VisualizerPanel();
@@ -74,7 +73,7 @@ public class SortingGUI extends JFrame implements IView {
 
         // Action for "New Random Data" button
         generateBtn.addActionListener(e -> {
-            if (isSorting) return; // Don't reset if currently sorting
+            if (isSorting) return; 
             
             // Calculate max height based on window size
             int maxH = panel.getHeight() > 50 ? panel.getHeight() - 50 : 400;
@@ -83,24 +82,56 @@ public class SortingGUI extends JFrame implements IView {
         });
     }
 
-    // Stub methods to satisfy IView interface
     @Override
-    public void setArray(int[] array) { }
+    public void setArray(int[] array) {
+        this.array = array;
+        panel.repaint();
+    }
 
     @Override
-    public void onSortEvent(SortEvent event) { }
+    public void onSortEvent(SortEvent event) {
+        // Handle different events from the backend
+        if (event instanceof CompareEvent) {
+            CompareEvent e = (CompareEvent) event;
+            panel.setIndices(e.getA(), e.getB());
+            panel.setHighlightColor(Color.GREEN);
+        } 
+        else if (event instanceof SwapEvent) {
+            SwapEvent e = (SwapEvent) event;
+            panel.setIndices(e.getA(), e.getB());
+            panel.setHighlightColor(Color.RED);
+        }
+        else if (event instanceof MarkEvent) {
+            MarkEvent e = (MarkEvent) event;
+            panel.setIndices(e.getA(), e.getA());
+            panel.setHighlightColor(Color.ORANGE);
+        }
+
+        // Trigger redraw and wait
+        panel.repaint();
+        sleep();
+    }
+
+    // Helper to pause execution for animation effect
+    private void sleep() {
+        try {
+            int delay = 101 - speedSlider.getValue();
+            Thread.sleep(delay);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     // Inner class that handles the actual drawing
     private class VisualizerPanel extends JPanel {
-        private int idx1 = -1; // First bar to highlight
-        private int idx2 = -1; // Second bar to highlight
+        private int idx1 = -1; 
+        private int idx2 = -1; 
         private Color highlightColor = Color.RED;
 
         public VisualizerPanel() {
             setBackground(Color.WHITE);
         }
 
-        // Updates which bars should be highlighted
         public void setIndices(int a, int b) {
             this.idx1 = a;
             this.idx2 = b;
@@ -115,7 +146,6 @@ public class SortingGUI extends JFrame implements IView {
             this.idx2 = -1;
         }
 
-        // Draws the array as bars on the screen
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -126,16 +156,15 @@ public class SortingGUI extends JFrame implements IView {
             for (int i = 0; i < array.length; i++) {
                 int height = array[i];
                 int x = i * width;
-                int y = getHeight() - height;
+                int y = getHeight() - height; 
 
-                // Highlight the active bars
                 if (i == idx1 || i == idx2) {
                     g.setColor(highlightColor);
                 } else {
                     g.setColor(new Color(100, 149, 237));
                 }
 
-                g.fillRect(x, y, width - 2, height); // Draw the bar
+                g.fillRect(x, y, width - 2, height); 
             }
         }
     }
