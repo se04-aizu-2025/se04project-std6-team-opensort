@@ -74,12 +74,46 @@ public class SortingGUI extends JFrame implements IView {
         // Action for "New Random Data" button
         generateBtn.addActionListener(e -> {
             if (isSorting) return; 
-            
-            // Calculate max height based on window size
             int maxH = panel.getHeight() > 50 ? panel.getHeight() - 50 : 400;
             array = generator.generateRandom(50, 10, maxH);
             panel.repaint();
         });
+
+        // Action for "Run Sort" button
+        sortBtn.addActionListener(e -> startSorting());
+    }
+
+    private void startSorting() {
+        if (isSorting) return;
+        isSorting = true;
+
+        // Run sorting in a separate thread to keep UI responsive
+        new Thread(() -> {
+            String selected = (String) algoBox.getSelectedItem();
+            SortingAlgorithm algorithm = null;
+
+            // Instantiate the selected algorithm
+            switch (selected) {
+                case "Bubble Sort": algorithm = new BubbleSort(array); break;
+                case "Selection Sort": algorithm = new SelectionSort(array); break;
+                case "Insertion Sort": algorithm = new InsertionSort(array); break;
+                case "Quick Sort": algorithm = new QuickSort(array); break;
+                case "Merge Sort": algorithm = new MergeSort(array); break;
+            }
+
+            if (algorithm != null) {
+                // Register this view as a listener to receive events
+                algorithm.addEventListener(this);
+                
+                // Execute the sort
+                algorithm.sort();
+            }
+
+            // Cleanup state after sorting completes
+            panel.resetIndices();
+            panel.repaint();
+            isSorting = false;
+        }).start();
     }
 
     @Override
@@ -90,7 +124,6 @@ public class SortingGUI extends JFrame implements IView {
 
     @Override
     public void onSortEvent(SortEvent event) {
-        // Handle different events from the backend
         if (event instanceof CompareEvent) {
             CompareEvent e = (CompareEvent) event;
             panel.setIndices(e.getA(), e.getB());
