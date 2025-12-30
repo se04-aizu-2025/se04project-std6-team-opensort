@@ -1,4 +1,4 @@
-package com.opensort.view;
+package com.opensort.view.SortingGUI;
 
 import com.opensort.sorting.*;
 import com.opensort.sorting.events.*;
