@@ -1,6 +1,8 @@
 package com.opensort.view;
 
+import com.opensort.controller.IController;
 import com.opensort.sorting.events.SortEvent;
+import com.opensort.view.events.ViewEvent;
 
 // Interface to generalize the view
 public interface IView extends Runnable {
@@ -12,4 +14,8 @@ public interface IView extends Runnable {
     public void setArray(int[] array);
 
     public void setAlgorithms(String[] algorithms);
+
+    public void addEventListener(IController listener);
+
+    public void removeEventListener(IController listener);
 }

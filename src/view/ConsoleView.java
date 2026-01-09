@@ -1,11 +1,18 @@
 package com.opensort.view;
 
+import com.opensort.controller.IController;
 import com.opensort.sorting.events.CompareEvent;
 import com.opensort.sorting.events.MarkEvent;
 import com.opensort.sorting.events.SortEvent;
 import com.opensort.sorting.events.SwapEvent;
+import com.opensort.view.events.AlgorithmChangeEvent;
+import com.opensort.view.events.ArrayChangeEvent;
+import com.opensort.view.events.ExitEvent;
+import com.opensort.view.events.ViewEvent;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -17,6 +24,8 @@ public class ConsoleView implements IView{
     private ConcurrentLinkedQueue<SortEvent> eventsToProcess = new ConcurrentLinkedQueue<>();
     private boolean running = true;
     private Scanner scanner;
+
+    private final List<IController> viewEventListeners = new ArrayList<>();
 
     // Print the current state of the array
     private void printArray(){
@@ -77,6 +86,22 @@ public class ConsoleView implements IView{
         this.algorithms = algorithms;
     }
 
+    @Override
+    public void addEventListener(IController listener) {
+        viewEventListeners.add(listener);
+    }
+
+    @Override
+    public void removeEventListener(IController listener) {
+        viewEventListeners.remove(listener);
+    }
+
+    private void fireEvent(ViewEvent event){
+        for(IController listener : viewEventListeners){
+            listener.onViewEvent(event);
+        }
+    }
+
     // Get a new array from user input
     private int[] getArrayFromUser(){
         int[] newArray;
@@ -124,7 +149,7 @@ public class ConsoleView implements IView{
 
             // Try to convert user input
             try {
-                algorithm = scanner.nextInt();
+                algorithm = Integer.parseInt(scanner.nextLine());
             } catch (Exception _) {
                 System.out.println("Invalid input.");
             }
@@ -139,6 +164,8 @@ public class ConsoleView implements IView{
 Available commands:
     - (n)ext:
         Perform next step
+    - (p)rint:
+        Print the array
     - (h)elp | ?:
         Print this help
     - (q)uit | (e)xit:
@@ -155,13 +182,10 @@ Available commands:
         scanner = new Scanner(System.in);
 
         if(array == null){
-            getArrayFromUser();
+            fireEvent(new ArrayChangeEvent(getArrayFromUser()));
         }
 
-        getAlgorithmFromUser();
-
-        System.out.print("Initial array:\t\t");
-        printArray();
+        fireEvent(new AlgorithmChangeEvent(getAlgorithmFromUser()));
 
         String lastInput = "";
         while (running){
@@ -172,11 +196,16 @@ Available commands:
             lastInput = userInput;
 
             switch (userInput.strip()){
+                case "p":
+                case "print":
+                    printArray();
+                    break;
                 case "q":
                 case "quit":
                 case "e":
                 case "exit":
                     running = false;
+                    fireEvent(new ExitEvent());
                     break;
                 case "n":
                 case "next":
@@ -195,12 +224,12 @@ Available commands:
                 case "algo":
                     int algorithm = getAlgorithmFromUser();
                     if(algorithm >= 0){
-                        System.out.println(algorithms[algorithm]);
+                        fireEvent(new AlgorithmChangeEvent(algorithm));
                     }
                     break;
                 case "arr":
                     int[] newArray = getArrayFromUser();
-                    System.out.println(Arrays.toString(newArray));
+                    fireEvent(new ArrayChangeEvent(newArray));
                     break;
                 default:
                     printHelp();
