@@ -1,17 +1,15 @@
 package com.opensort;
+import com.opensort.controller.Controller;
+import com.opensort.controller.IController;
 import com.opensort.sorting.*;
+import com.opensort.view.IView;
+import com.opensort.view.ConsoleView;
 
 class Main{
     public static void main(String[] args){
-        
-        int[] test = new int[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1};
-
-        SortingAlgorithm h = new BubbleSort(test);
-
-        int[] result = h.sort();
-
-        for(int i = 0; i < result.length; i++){
-            System.out.println(result[i]);
-        } 
+        IView view = new ConsoleView();
+        IController controller = new Controller(view);
+        new Thread(controller).start();
+        new Thread(view).start();
     }
 }
