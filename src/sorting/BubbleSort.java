@@ -15,13 +15,15 @@ public class BubbleSort extends SortingAlgorithm{
             // Do not loop over the i last numbers, since they will already be sorted
             for(int j = 0; j < array.length - i - 1; j++){
                 // If the next number is smaller than the current number
-                if(array[j + 1] < array[j]){
+                if(array[j + 1] < array[j] && compare(j, j + 1)){
                     // Swap them
                     int temp = array[j + 1];
                     array[j + 1] = array[j];
                     array[j] = temp;
+                    swap(j, j + 1);
                 }
             }
+            sorted(array.length - i - 1);
         }
 
         return array;
