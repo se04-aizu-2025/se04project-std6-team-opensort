@@ -32,7 +32,7 @@ public class HeapSort extends SortingAlgorithm{
         int right = rightChildNode(root);
 
         // Check if the left child exists and is larger than the root
-        if (left <= last && array[left] > array[root]){
+        if (left <= last && (compare(left, root) && array[left] > array[root])){
             largest = left;
         }
         else{
@@ -40,12 +40,13 @@ public class HeapSort extends SortingAlgorithm{
         }
 
         // Check if the right child exists and is larger than the previous largest value
-        if (right <= last && array[right] > array[largest]){
+        if (right <= last && (compare(right, largest) && array[right] > array[largest])){
             largest = right;
         }
 
         // Swap the largest value with the root
         if (largest != root){
+            swap(root, largest);
             int temp = array[root];
             array[root] = array[largest];
             array[largest] = temp;
@@ -73,6 +74,7 @@ public class HeapSort extends SortingAlgorithm{
         // Loop over all elements of the heap
         for (int i = last; i>first;i--){
             // Swap the current root with the last element of the non sorted heap
+            swap(first, i);
             int temp = array[first];
             array[first] = array[i];
             array[i] = temp;

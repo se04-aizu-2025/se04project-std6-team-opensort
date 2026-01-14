@@ -1,6 +1,7 @@
 package com.opensort.controller;
 
 import com.opensort.sorting.BubbleSort;
+import com.opensort.sorting.HeapSort;
 import com.opensort.sorting.SortingAlgorithm;
 
 import java.lang.reflect.InvocationTargetException;
@@ -16,6 +17,10 @@ public class AlgorithmList {
         new AlgorithmData(){{
             name = "Bubble sort";
             classType = BubbleSort.class;
+        }},
+        new AlgorithmData(){{
+            name = "Heap sort";
+            classType = HeapSort.class;
         }}
     };
 
