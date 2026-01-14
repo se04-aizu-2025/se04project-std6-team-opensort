@@ -3,9 +3,6 @@ import com.opensort.controller.Controller;
 import com.opensort.controller.IController;
 import com.opensort.view.IView;
 import com.opensort.view.ConsoleView;
-import com.opensort.view.events.ArrayChangeEvent;
-
-import javax.swing.*;
 
 class Main{
 
