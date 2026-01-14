@@ -28,6 +28,11 @@ public class Controller implements IController{
         view.setAlgorithms(AlgorithmList.getStrings());
     }
 
+    public Controller(IView view, int[] initialArray){
+        this.currentArray = initialArray;
+        this(view);
+    }
+
     @Override
     public void onViewEvent(ViewEvent event) {
         eventsToProcess.add(event);
