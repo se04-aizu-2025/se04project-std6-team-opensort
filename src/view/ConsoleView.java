@@ -79,6 +79,8 @@ public class ConsoleView implements IView{
     @Override
     public void setArray(int[] array) {
         this.array = array;
+        // Clear all remaining events to process, since they are related to the old state of the array
+        this.eventsToProcess.clear();
     }
 
     @Override
@@ -181,25 +183,34 @@ Available commands:
     public void run() {
         scanner = new Scanner(System.in);
 
+        // In case no initial array was provided, request it from the user
         if(array == null){
             fireEvent(new ArrayChangeEvent(getArrayFromUser()));
         }
 
+        // Request the sorting algorithm from the user
         fireEvent(new AlgorithmChangeEvent(getAlgorithmFromUser()));
 
+        // Remember the last input
         String lastInput = "";
+
         while (running){
+            // Get user input
             System.out.print("(h for help)>_: ");
             String userInput = scanner.nextLine();
 
+            // If the input is blank, replay the last input
             if (userInput.isBlank()) userInput = lastInput;
             lastInput = userInput;
 
+            // Check the command provided by the user
             switch (userInput.strip()){
+                // Print the current state of the array
                 case "p":
                 case "print":
                     printArray();
                     break;
+                // Quit the application
                 case "q":
                 case "quit":
                 case "e":
@@ -207,8 +218,10 @@ Available commands:
                     running = false;
                     fireEvent(new ExitEvent());
                     break;
+                // Perform the next algorithm step
                 case "n":
                 case "next":
+                    // Try to get the next event from the queue and process it
                     SortEvent nextEvent = eventsToProcess.poll();
                     if(nextEvent != null){
                         handleEvent(nextEvent);
@@ -216,21 +229,25 @@ Available commands:
                         System.out.println("Nothing to do...");
                     }
                     break;
+                // Print the user help
                 case "h":
                 case "help":
                 case "?":
                     printHelp();;
                     break;
+                // Change the current algorithm
                 case "algo":
                     int algorithm = getAlgorithmFromUser();
                     if(algorithm >= 0){
                         fireEvent(new AlgorithmChangeEvent(algorithm));
                     }
                     break;
+                // Change the current array
                 case "arr":
                     int[] newArray = getArrayFromUser();
                     fireEvent(new ArrayChangeEvent(newArray));
                     break;
+                // In case the input was invalid, print the user help
                 default:
                     printHelp();
                     break;
