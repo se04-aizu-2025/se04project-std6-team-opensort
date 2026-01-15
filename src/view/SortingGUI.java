@@ -13,9 +13,27 @@ import java.util.Random;
 public class SortingGUI extends JFrame implements IView {
 
     //Constants
+    private static final int WINDOW_WIDTH = 900;
+    private static final int WINDOW_HEIGHT = 600;
     private static final int ANIMATION_DELAY_MS = 500; // Fixed speed
 
-    //UI Components
+    // Drawing Settings
+    private static final int BOX_SIZE = 70;
+    private static final int BOX_GAP = 25;
+    private static final int BOX_ARC = 15;
+    private static final Font FONT_NUMBERS = new Font("Arial", Font.BOLD, 28);
+    private static final Font FONT_STATUS = new Font("SansSerif", Font.PLAIN, 24);
+    private static final Stroke STROKE_BORDER = new BasicStroke(3);
+
+    // Color Palette
+    private static final Color COL_BACKGROUND = new Color(240, 240, 245);
+    private static final Color COL_DEFAULT = new Color(100, 149, 237); // Cornflower Blue
+    private static final Color COL_COMPARE = new Color(255, 165, 0);   // Orange
+    private static final Color COL_SWAP = new Color(220, 20, 60);      // Crimson
+    private static final Color COL_SORTED = new Color(50, 205, 50);    // Lime Green
+    private static final Color COL_TEXT = Color.WHITE;
+
+    //Components
     private VisualizerPanel panel;
     private JLabel statusLabel;
     private JButton playBtn, stepBtn;
@@ -23,6 +41,7 @@ public class SortingGUI extends JFrame implements IView {
 
     //State
     private int[] array;
+    private boolean[] sortedFlags;
     private final List<IController> listeners = new ArrayList<>();
 
     //Concurrency Control
@@ -34,85 +53,123 @@ public class SortingGUI extends JFrame implements IView {
         initUI();
     }
 
+    //UI Setup Methods
     private void initUI() {
-        setTitle("OpenSort Visualizer (Prototype)");
-        setSize(900, 600);
+        setTitle("OpenSort Visualizer");
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        getContentPane().setBackground(COL_BACKGROUND);
 
-        //Menu Bar
+        setJMenuBar(createMenuBar());
+        add(createCenterPanel(), BorderLayout.CENTER);
+        add(createBottomPanel(), BorderLayout.SOUTH);
+    }
+
+    private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
-        algoMenu = new JMenu("Algorithm"); // Populated by Controller later
 
+        //Algorithm Menu
+        algoMenu = new JMenu("Algorithm");
+
+        //Settings Menu
         JMenu settingsMenu = new JMenu("Settings");
+
         JMenuItem randomizeItem = new JMenuItem("Randomize Data");
-        randomizeItem.addActionListener(e -> {
-            // Generate simple random data
-            int[] newArr = new Random().ints(8, 1, 99).toArray();
-            fireViewEvent(new ArrayChangeEvent(newArr));
-            resetControls();
-        });
+        randomizeItem.addActionListener(e -> generateNewData(8, 1, 99));
+
+        JMenuItem customInputItem = new JMenuItem("Input Custom Data...");
+        customInputItem.addActionListener(e -> promptForCustomData());
 
         settingsMenu.add(randomizeItem);
+        settingsMenu.add(customInputItem);
+
         menuBar.add(algoMenu);
         menuBar.add(settingsMenu);
-        setJMenuBar(menuBar);
+        return menuBar;
+    }
 
-        //Center Panel
-        statusLabel = new JLabel("Select an Algorithm", SwingConstants.CENTER);
-        statusLabel.setFont(new Font("Arial", Font.PLAIN, 24));
+    private JPanel createCenterPanel() {
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+
+        statusLabel = new JLabel("Select an Algorithm to start", SwingConstants.CENTER);
+        statusLabel.setFont(FONT_STATUS);
         statusLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
 
         panel = new VisualizerPanel();
 
-        add(statusLabel, BorderLayout.NORTH);
-        add(panel, BorderLayout.CENTER);
+        centerPanel.add(statusLabel, BorderLayout.NORTH);
+        centerPanel.add(panel, BorderLayout.CENTER);
+        return centerPanel;
+    }
 
-        //Bottom Controls
+    private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel();
-        playBtn = new JButton("Play");
+        bottomPanel.setOpaque(false);
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+
+        playBtn = new JButton("▶ Play");
+        playBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
         playBtn.addActionListener(e -> togglePlay());
 
-        stepBtn = new JButton("Step");
-        stepBtn.addActionListener(e -> triggerStep());
+        stepBtn = new JButton("⏭ Step");
+        stepBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
         stepBtn.setEnabled(false);
+        stepBtn.addActionListener(e -> triggerStep());
 
         bottomPanel.add(playBtn);
+        bottomPanel.add(Box.createHorizontalStrut(15));
         bottomPanel.add(stepBtn);
-        add(bottomPanel, BorderLayout.SOUTH);
+        return bottomPanel;
     }
 
-    //Control Logic
-    private void togglePlay() {
-        isPaused = !isPaused;
-        playBtn.setText(isPaused ? "Play" : "Pause");
-        stepBtn.setEnabled(isPaused);
-        if (!isPaused) synchronized (pauseLock) { pauseLock.notifyAll(); }
+    //Core Logic & Events
+    private void generateNewData(int size, int min, int max) {
+        Random rand = new Random();
+        int[] newArr = new int[size];
+        for (int i = 0; i < size; i++) {
+            newArr[i] = rand.nextInt(max - min + 1) + min;
+        }
+        fireViewEvent(new ArrayChangeEvent(newArr));
+        resetControls();
     }
 
-    private void triggerStep() {
-        if (!isPaused) return;
-        stepOnce = true;
-        synchronized (pauseLock) { pauseLock.notifyAll(); }
-    }
+    private void promptForCustomData() {
+        String input = JOptionPane.showInputDialog(this,
+                "Enter numbers separated by commas (e.g. 5, 1, 4, 2):",
+                "Input Custom Data", JOptionPane.PLAIN_MESSAGE);
 
-    private void resetControls() {
-        isPaused = true;
-        playBtn.setText("Play");
-        stepBtn.setEnabled(true);
+        if (input != null && !input.trim().isEmpty()) {
+            try {
+                String[] parts = input.split(",");
+                int[] newArr = new int[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    newArr[i] = Integer.parseInt(parts[i].trim());
+                }
+                fireViewEvent(new ArrayChangeEvent(newArr));
+                resetControls();
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid input! Use numbers separated by commas.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     //IView Implementation
     @Override
     public void run() {
         SwingUtilities.invokeLater(() -> setVisible(true));
-        int[] startData = new Random().ints(8, 1, 99).toArray();
-        fireViewEvent(new ArrayChangeEvent(startData));
+        generateNewData(8, 1, 99); // Generate initial data
     }
 
     @Override
     public void setArray(int[] array) {
         this.array = array;
+        if (array != null) {
+            this.sortedFlags = new boolean[array.length];
+        }
         panel.repaint();
     }
 
@@ -125,8 +182,11 @@ public class SortingGUI extends JFrame implements IView {
             JMenuItem item = new JMenuItem(name);
             item.addActionListener(e -> {
                 fireViewEvent(new AlgorithmChangeEvent(id));
-                statusLabel.setText(name + " Selected");
+                updateStatus(name + " Selected. Press Play.");
                 resetControls();
+                // Reset sorted flags just in case
+                if (array != null) sortedFlags = new boolean[array.length];
+                panel.repaint();
             });
             algoMenu.add(item);
         }
@@ -134,39 +194,83 @@ public class SortingGUI extends JFrame implements IView {
 
     @Override
     public void onSortEvent(SortEvent event) {
-        //Update Visual State
+        //Update State based on event
         if (event instanceof CompareEvent) {
             CompareEvent e = (CompareEvent) event;
-            panel.updateState(e.getA(), e.getB());
-            statusLabel.setText("Comparing indices " + e.getA() + " & " + e.getB());
+            panel.updateState(e.getA(), e.getB(), COL_COMPARE);
+            updateStatus("Comparing " + e.getA() + " and " + e.getB());
         }
         else if (event instanceof SwapEvent) {
             SwapEvent e = (SwapEvent) event;
-            panel.updateState(e.getA(), e.getB());
-            statusLabel.setText("Swapping!");
+            panel.updateState(e.getA(), e.getB(), COL_SWAP);
+            updateStatus("Swapping!");
+        }
+        else if (event instanceof MarkEvent) {
+            MarkEvent e = (MarkEvent) event;
+            panel.updateState(e.getA(), e.getA(), COL_SORTED);
+            updateStatus(e.getMessage());
+
+            if (e.getType() == MarkEventType.Sorted) {
+                markAsSorted(e.getA());
+            }
         }
 
         panel.repaint();
 
-        //Handle Pausing & Speed
+        //Control Animation Flow
         synchronized (pauseLock) {
             if (isPaused) {
                 while (isPaused && !stepOnce) {
-                    try {
-                        pauseLock.wait();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    try { pauseLock.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 }
                 stepOnce = false;
             } else {
-                try {
-                    Thread.sleep(ANIMATION_DELAY_MS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+                try { Thread.sleep(ANIMATION_DELAY_MS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             }
         }
+    }
+
+    //Helper Methods
+    private void markAsSorted(int index) {
+        if (sortedFlags == null || index < 0 || index >= sortedFlags.length) return;
+        sortedFlags[index] = true;
+        // Check if fully sorted
+        boolean allSorted = true;
+        for (boolean b : sortedFlags) if (!b) allSorted = false;
+
+        if (allSorted) {
+            SwingUtilities.invokeLater(() -> {
+                statusLabel.setText("Sorting Complete!");
+                JOptionPane.showMessageDialog(this, "The array has been fully sorted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                resetControls();
+            });
+        }
+    }
+    private void updateStatus(String text) {
+        SwingUtilities.invokeLater(() -> statusLabel.setText(text));
+    }
+
+    private void resetControls() {
+        isPaused = true;
+        playBtn.setText("▶ Play");
+        stepBtn.setEnabled(true);
+    }
+
+    private void togglePlay() {
+        isPaused = !isPaused;
+        playBtn.setText(isPaused ? "▶ Play" : "⏸ Pause");
+        stepBtn.setEnabled(isPaused);
+        if (!isPaused) synchronized (pauseLock) { pauseLock.notifyAll(); }
+    }
+
+    private void triggerStep() {
+        if (!isPaused) return;
+        stepOnce = true;
+        synchronized (pauseLock) { pauseLock.notifyAll(); }
+    }
+
+    private void fireViewEvent(ViewEvent event) {
+        for (IController listener : listeners) listener.onViewEvent(event);
     }
 
     @Override
@@ -175,17 +279,18 @@ public class SortingGUI extends JFrame implements IView {
     @Override
     public void removeEventListener(IController listener) { listeners.remove(listener); }
 
-    private void fireViewEvent(ViewEvent event) {
-        for (IController listener : listeners) listener.onViewEvent(event);
-    }
-
     //Visualizer Component
     private class VisualizerPanel extends JPanel {
         private int idx1 = -1, idx2 = -1;
+        private Color activeColor = COL_DEFAULT;
+        public VisualizerPanel() {
+            setOpaque(false);
+        }
 
-        public void updateState(int a, int b) {
+        public void updateState(int a, int b, Color c) {
             this.idx1 = a;
             this.idx2 = b;
+            this.activeColor = c;
         }
 
         @Override
@@ -193,33 +298,44 @@ public class SortingGUI extends JFrame implements IView {
             super.paintComponent(g);
             if (array == null) return;
 
-            // Simple box drawing settings
-            int boxSize = 70;
-            int gap = 20;
-            int startX = (getWidth() - (array.length * (boxSize + gap))) / 2;
-            int startY = (getHeight() - boxSize) / 2;
+            Graphics2D g2 = (Graphics2D) g;
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            g.setFont(new Font("Arial", Font.BOLD, 24));
+            g2.setFont(FONT_NUMBERS);
+
+            // Calculate layout centering
+            int totalWidth = (array.length * BOX_SIZE) + ((array.length - 1) * BOX_GAP);
+            int startX = (getWidth() - totalWidth) / 2;
+            int startY = (getHeight() - BOX_SIZE) / 2;
 
             for (int i = 0; i < array.length; i++) {
-                int x = startX + i * (boxSize + gap);
+                int x = startX + i * (BOX_SIZE + BOX_GAP);
 
-                if (i == idx1 || i == idx2) {
-                    g.setColor(Color.LIGHT_GRAY);
+                // Determine color
+                if (sortedFlags != null && sortedFlags[i]) {
+                    g2.setColor(COL_SORTED);
+                } else if (i == idx1 || i == idx2) {
+                    g2.setColor(activeColor);
                 } else {
-                    g.setColor(Color.WHITE);
+                    g2.setColor(COL_DEFAULT);
                 }
 
-                // Draw filled box
-                g.fillRect(x, startY, boxSize, boxSize);
+                // Draw Box
+                g2.fillRoundRect(x, startY, BOX_SIZE, BOX_SIZE, BOX_ARC, BOX_ARC);
 
-                // Draw outline
-                g.setColor(Color.BLACK);
-                g.drawRect(x, startY, boxSize, boxSize);
+                // Draw Border
+                g2.setColor(g2.getColor().darker());
+                g2.setStroke(STROKE_BORDER);
+                g2.drawRoundRect(x, startY, BOX_SIZE, BOX_SIZE, BOX_ARC, BOX_ARC);
 
-                // Draw number
+                // Draw Number
+                g2.setColor(COL_TEXT);
                 String num = String.valueOf(array[i]);
-                g.drawString(num, x + 25, startY + 45);
+                FontMetrics fm = g2.getFontMetrics();
+                int textX = x + (BOX_SIZE - fm.stringWidth(num)) / 2;
+                int textY = startY + (BOX_SIZE - fm.getHeight()) / 2 + fm.getAscent() - 2;
+                g2.drawString(num, textX, textY);
             }
         }
     }
