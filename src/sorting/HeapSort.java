@@ -79,11 +79,12 @@ public class HeapSort extends SortingAlgorithm{
             array[first] = array[i];
             array[i] = temp;
 
+            sorted(i);
             // Rebuild the heap but ignore the new last value
             // This element is already sorted
             heapify(array, first, i-1, first);
         }
-
+        sorted(0);
         return array;
     }
 
