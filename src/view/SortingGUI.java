@@ -1,204 +1,97 @@
-package view;
+package com.opensort.view;
 
-import com.opensort.sorting.*;
-import com.opensort.sorting.events.*;
-import com.opensort.testing.DataGenerator;
-
+import com.opensort.controller.IController;
+import com.opensort.sorting.events.SortEvent;
+import com.opensort.view.events.*;
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
-// Main window for the application
 public class SortingGUI extends JFrame implements IView {
 
-    //UI Components
-    private VisualizerPanel panel; 
-    private JButton generateBtn, sortBtn;
-    private JComboBox<String> algoBox;
-    private JSlider speedSlider;
+    private static final int WINDOW_WIDTH = 900;
+    private static final int WINDOW_HEIGHT = 600;
 
-    //Data & State
-    private int[] array; 
-    private DataGenerator generator;
-    private volatile boolean isSorting = false; 
+    // UI Components
+    private JPanel panel;
+    private JLabel statusLabel;
+    private JButton playBtn, stepBtn;
+    private JMenu algoMenu;
+
+    // MVC State
+    private int[] array;
+    private final List<IController> listeners = new ArrayList<>();
 
     public SortingGUI() {
-        // Initialize data generator and default array
-        this.generator = new DataGenerator();
-        this.array = generator.generateRandom(50, 10, 400); 
         initUI();
     }
 
-    // Setup the window and buttons
     private void initUI() {
-        setTitle("OpenSort Visualizer");
-        setSize(900, 600);
+        setTitle("OpenSort Visualizer (Skeleton)");
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout()); 
+        setLayout(new BorderLayout());
 
-        // Add the drawing panel to the center
-        panel = new VisualizerPanel();
+        // 1. Menu Stub
+        JMenuBar menuBar = new JMenuBar();
+        algoMenu = new JMenu("Algorithm");
+        menuBar.add(algoMenu);
+        setJMenuBar(menuBar);
+
+        // 2. Center Panel Stub
+        statusLabel = new JLabel("Waiting for data...", SwingConstants.CENTER);
+        statusLabel.setFont(new Font("Arial", Font.PLAIN, 24));
+
+        panel = new JPanel(); // Placeholder panel
+        panel.setBackground(Color.LIGHT_GRAY);
+
+        add(statusLabel, BorderLayout.NORTH);
         add(panel, BorderLayout.CENTER);
 
-        // Create the top control bar
-        JPanel controls = new JPanel();
-        controls.setBackground(Color.DARK_GRAY);
-
-        // Algorithm selection
-        String[] algos = {
-            "Bubble Sort", 
-            "Selection Sort", 
-            "Insertion Sort", 
-            "Quick Sort", 
-            "Merge Sort" 
-        };
-        algoBox = new JComboBox<>(algos);
-        
-        generateBtn = new JButton("New Random Data");
-        sortBtn = new JButton("Run Sort");
-
-        // Slider to control animation speed
-        speedSlider = new JSlider(1, 100, 50);
-        speedSlider.setBackground(Color.DARK_GRAY);
-
-        // Add components to the control bar
-        controls.add(new JLabel("Algo: "));
-        controls.add(algoBox);
-        controls.add(generateBtn);
-        controls.add(sortBtn);
-        controls.add(new JLabel(" Speed: "));
-        controls.add(speedSlider);
-
-        // Place controls at the top of the window
-        add(controls, BorderLayout.NORTH);
-
-        // Action for "New Random Data" button
-        generateBtn.addActionListener(e -> {
-            if (isSorting) return; 
-            int maxH = panel.getHeight() > 50 ? panel.getHeight() - 50 : 400;
-            array = generator.generateRandom(50, 10, maxH);
-            panel.repaint();
-        });
-
-        // Action for "Run Sort" button
-        sortBtn.addActionListener(e -> startSorting());
+        // 3. Bottom Controls Stub
+        JPanel bottomPanel = new JPanel();
+        playBtn = new JButton("Play");
+        stepBtn = new JButton("Step");
+        bottomPanel.add(playBtn);
+        bottomPanel.add(stepBtn);
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void startSorting() {
-        if (isSorting) return;
-        isSorting = true;
+    // --- IView Interface Implementation ---
 
-        // Run sorting in a separate thread to keep UI responsive
-        new Thread(() -> {
-            String selected = (String) algoBox.getSelectedItem();
-            SortingAlgorithm algorithm = null;
-
-            // Instantiate the selected algorithm
-            switch (selected) {
-                case "Bubble Sort": algorithm = new BubbleSort(array); break;
-                case "Selection Sort": algorithm = new SelectionSort(array); break;
-                case "Insertion Sort": algorithm = new InsertionSort(array); break;
-                case "Quick Sort": algorithm = new QuickSort(array); break;
-                case "Merge Sort": algorithm = new MergeSort(array); break;
-            }
-
-            if (algorithm != null) {
-                // Register this view as a listener to receive events
-                algorithm.addEventListener(this);
-                
-                // Execute the sort
-                algorithm.sort();
-            }
-
-            // Cleanup state after sorting completes
-            panel.resetIndices();
-            panel.repaint();
-            isSorting = false;
-        }).start();
+    @Override
+    public void run() {
+        SwingUtilities.invokeLater(() -> setVisible(true));
     }
 
     @Override
     public void setArray(int[] array) {
         this.array = array;
-        panel.repaint();
+        // Logic to repaint panel will go here later
+    }
+
+    @Override
+    public void setAlgorithms(String[] algorithms) {
+        algoMenu.removeAll();
+        for (String name : algorithms) {
+            algoMenu.add(new JMenuItem(name));
+        }
     }
 
     @Override
     public void onSortEvent(SortEvent event) {
-        if (event instanceof CompareEvent) {
-            CompareEvent e = (CompareEvent) event;
-            panel.setIndices(e.getA(), e.getB());
-            panel.setHighlightColor(Color.GREEN);
-        } 
-        else if (event instanceof SwapEvent) {
-            SwapEvent e = (SwapEvent) event;
-            panel.setIndices(e.getA(), e.getB());
-            panel.setHighlightColor(Color.RED);
-        }
-        else if (event instanceof MarkEvent) {
-            MarkEvent e = (MarkEvent) event;
-            panel.setIndices(e.getA(), e.getA());
-            panel.setHighlightColor(Color.ORANGE);
-        }
-
-        // Trigger redraw and wait
-        panel.repaint();
-        sleep();
+        // Event handling logic will go here
     }
 
-    // Helper to pause execution for animation effect
-    private void sleep() {
-        try {
-            int delay = 101 - speedSlider.getValue();
-            Thread.sleep(delay);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
+    @Override
+    public void addEventListener(IController listener) { listeners.add(listener); }
 
-    // Inner class that handles the actual drawing
-    private class VisualizerPanel extends JPanel {
-        private int idx1 = -1; 
-        private int idx2 = -1; 
-        private Color highlightColor = Color.RED;
+    @Override
+    public void removeEventListener(IController listener) { listeners.remove(listener); }
 
-        public VisualizerPanel() {
-            setBackground(Color.WHITE);
-        }
-
-        public void setIndices(int a, int b) {
-            this.idx1 = a;
-            this.idx2 = b;
-        }
-
-        public void setHighlightColor(Color c) {
-            this.highlightColor = c;
-        }
-
-        public void resetIndices() {
-            this.idx1 = -1;
-            this.idx2 = -1;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            if (array == null) return;
-
-            int width = getWidth() / array.length;
-            
-            for (int i = 0; i < array.length; i++) {
-                int height = array[i];
-                int x = i * width;
-                int y = getHeight() - height; 
-
-                if (i == idx1 || i == idx2) {
-                    g.setColor(highlightColor);
-                } else {
-                    g.setColor(new Color(100, 149, 237));
-                }
-
-                g.fillRect(x, y, width - 2, height); 
-            }
-        }
+    // Helper to send events to Controller
+    protected void fireViewEvent(ViewEvent event) {
+        for (IController listener : listeners) listener.onViewEvent(event);
     }
 }
