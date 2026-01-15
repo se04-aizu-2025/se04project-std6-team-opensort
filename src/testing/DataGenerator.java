@@ -37,17 +37,4 @@ public class DataGenerator{
         }
         return arr;
     }
-
-
-    public int[] generateWithDuplicates(int size, int uniqueValues){
-        return null;
-    }
-
-    public int[] generateAllSame(int size, int value){
-        return null;
-    }
-
-    public int[] generateNearlySorted(int size, int swaps){
-        return null;
-    }
 }
