@@ -10,12 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * A robust, efficient, and user-friendly Swing GUI for visualizing sorting algorithms.
+ * Implements the MVC View interface to communicate with the Controller.
+ */
 public class SortingGUI extends JFrame implements IView {
 
     //Constants
     private static final int WINDOW_WIDTH = 900;
     private static final int WINDOW_HEIGHT = 600;
-    private static final int ANIMATION_DELAY_MS = 500; // Fixed speed
+    private static final int BASE_DELAY_MS = 500; // Base speed (1.0x)
 
     // Drawing Settings
     private static final int BOX_SIZE = 70;
@@ -23,6 +27,7 @@ public class SortingGUI extends JFrame implements IView {
     private static final int BOX_ARC = 15;
     private static final Font FONT_NUMBERS = new Font("Arial", Font.BOLD, 28);
     private static final Font FONT_STATUS = new Font("SansSerif", Font.PLAIN, 24);
+    private static final Font FONT_CONTROLS = new Font("SansSerif", Font.BOLD, 16);
     private static final Stroke STROKE_BORDER = new BasicStroke(3);
 
     // Color Palette
@@ -37,6 +42,7 @@ public class SortingGUI extends JFrame implements IView {
     private VisualizerPanel panel;
     private JLabel statusLabel;
     private JButton playBtn, stepBtn;
+    private JComboBox<String> speedBox;
     private JMenu algoMenu;
 
     //State
@@ -48,6 +54,7 @@ public class SortingGUI extends JFrame implements IView {
     private final Object pauseLock = new Object();
     private volatile boolean isPaused = true;
     private volatile boolean stepOnce = false;
+    private volatile int currentDelay = BASE_DELAY_MS;
 
     public SortingGUI() {
         initUI();
@@ -110,21 +117,38 @@ public class SortingGUI extends JFrame implements IView {
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
 
         playBtn = new JButton("▶ Play");
-        playBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
+        playBtn.setFont(FONT_CONTROLS);
         playBtn.addActionListener(e -> togglePlay());
 
         stepBtn = new JButton("⏭ Step");
-        stepBtn.setFont(new Font("SansSerif", Font.BOLD, 16));
+        stepBtn.setFont(FONT_CONTROLS);
         stepBtn.setEnabled(false);
         stepBtn.addActionListener(e -> triggerStep());
+
+        String[] speeds = { "0.5x", "1.0x", "1.5x", "2.0x", "2.5x" };
+        speedBox = new JComboBox<>(speeds);
+        speedBox.setFont(FONT_CONTROLS);
+        speedBox.setSelectedIndex(1); // Default to 1.0x
+        speedBox.setToolTipText("Animation Speed");
+        speedBox.addActionListener(e -> updateSpeed());
 
         bottomPanel.add(playBtn);
         bottomPanel.add(Box.createHorizontalStrut(15));
         bottomPanel.add(stepBtn);
+        bottomPanel.add(Box.createHorizontalStrut(15));
+        bottomPanel.add(new JLabel("Speed: "));
+        bottomPanel.add(speedBox);
         return bottomPanel;
     }
 
     //Core Logic & Events
+    private void updateSpeed() {
+        String selected = (String) speedBox.getSelectedItem();
+        if (selected == null) return;
+        double multiplier = Double.parseDouble(selected.replace("x", ""));
+        this.currentDelay = (int) (BASE_DELAY_MS / multiplier);
+    }
+
     private void generateNewData(int size, int min, int max) {
         Random rand = new Random();
         int[] newArr = new int[size];
@@ -225,7 +249,7 @@ public class SortingGUI extends JFrame implements IView {
                 }
                 stepOnce = false;
             } else {
-                try { Thread.sleep(ANIMATION_DELAY_MS); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                try { Thread.sleep(currentDelay); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             }
         }
     }
