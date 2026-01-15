@@ -1,8 +1,8 @@
 package com.opensort.sorting;
 
-public class mergeSort extends SortingAlgorithm{
+public class MergeSort extends SortingAlgorithm{
 
-    public mergeSort(int[] numbers){
+    public MergeSort(int[] numbers){
         super(numbers);
     }
 
