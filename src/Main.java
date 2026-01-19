@@ -12,6 +12,8 @@ class Main{
 Usage: java -jar opensort.jar [COMMAND] [ARRAY]
 
 Commands:
+If no command is provided, the GUI will be launched.
+
     test
         Run testcases for all available sorting algorithms and print the result to the command line.
         This command ignores the ARRAY parameter.
@@ -20,7 +22,7 @@ Commands:
         Uses the ARRAY if provided.
     gui
         Launch the GUI.
-        Uses the array if provided.
+        Uses the ARRAY if provided.
     help
         Display this help message.
 
@@ -59,6 +61,13 @@ Examples:
 
     public static void main(String[] args){
 
+        // Exit the software if too many arguments where provided
+        if(args.length > 2){
+            System.out.println("Too many arguments provided.");
+            System.out.println("Use the 'help' command to see how to use this cli.");
+            return;
+        }
+
         // Set default behavior
         // Currently launches the cui
         IView view = new ConsoleView();
@@ -66,10 +75,22 @@ Examples:
         // Initial array the user can provide in the command
         int[] initialArray = null;
 
-        if(args.length > 0){
+        if(args.length > 0) {
+            try {
+                // Try to interpret the last argument as an array
+                initialArray = tryGetArrayFromString(args[args.length - 1]);
+            } catch (Exception _) {}
+        }
+
+        // Check the subcommand if either:
+        // a) The array was not initialized, but there is an argument available
+        // b) There is more than one argument given
+        if((args.length == 1 && initialArray == null) || args.length > 1){
+
+            // Subcommands are always the first argument
             String subCommand = args[0];
 
-            // Check the sub commands if provided
+            // Check the sub command
             switch (subCommand){
                 case "test" -> {
                     // TODO launch test system
@@ -78,18 +99,6 @@ Examples:
                 }
                 case "cui" -> {
                     view = new ConsoleView();
-
-                    // If an additional argument is provided
-                    if(args.length > 1) {
-                        // Try to extract the user provided array from the last argument.
-                        try {
-                            initialArray = tryGetArrayFromString(args[args.length - 1]);
-                        } catch (Exception e) {
-                            System.out.println("Error while processing provided array.");
-                            System.out.println(e.getMessage());
-                            return;
-                        }
-                    }
                 }
                 case "gui" -> {
                     // TODO launch gui
@@ -102,14 +111,9 @@ Examples:
                     return;
                 }
                 default -> {
-                    // Check if the invalid subcommand is an array
-                    try{
-                        initialArray = tryGetArrayFromString(args[args.length - 1]);
-                    } catch (Exception e) {
-                        // Print error
-                        System.out.printf("Error: '%s' is neither a valid command nor a valid initial array.\n", subCommand);
-                        return;
-                    }
+                    System.out.printf("The command '%s' is not valid.\n", subCommand);
+                    System.out.println("Use the 'help' command to get a list of valid commands.");
+                    return;
                 }
             }
         }
