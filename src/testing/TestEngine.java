@@ -24,7 +24,6 @@ public class TestEngine {
                 new TestData("Random", generator.generateRandom(10, 1, 50))
         };
 
-        // Print header
         System.out.printf("%-15s %-8s %-8s %-8s\n",
                 "Algorithm", "Sorted", "Reverse", "Random");
         System.out.println("-".repeat(40));
@@ -44,20 +43,39 @@ public class TestEngine {
             System.out.println();
         }
     }
-    
 
-    public long measureTime(SortingAlgorithm algorithm) {
+    public long measureTime(SortingAlgorithm algorithm){
         long start = System.nanoTime();
         algorithm.sort();
         long end = System.nanoTime();
         return end - start;
     }
 
-    private static class TestData {
+    public EventCounts countEvents(SortingAlgorithm algorithm){
+
+        return new EventCounts(0, 0);
+    }
+
+    public static class EventCounts{
+        public final int compareCount;
+        public final int swapCount;
+
+        public EventCounts(int compareCount, int swapCount){
+            this.compareCount = compareCount;
+            this.swapCount = swapCount;
+        }
+
+        @Override
+        public String toString(){
+            return String.format("Compares: %d, Swaps: %d", compareCount, swapCount);
+        }
+    }
+
+    private static class TestData{
         String label;
         int[] data;
 
-        TestData(String label, int[] data) {
+        TestData(String label, int[] data){
             this.label = label;
             this.data = data;
         }
