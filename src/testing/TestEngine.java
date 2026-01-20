@@ -31,7 +31,7 @@ public class TestEngine {
         int swapCount = 0;
 
         @Override
-        public void onSortEvent(SortEvent event) {
+        public void onSortEvent(SortEvent event){
             if (event instanceof CompareEvent){
                 compareCount++;
             }else if (event instanceof SwapEvent){
@@ -70,7 +70,7 @@ public class TestEngine {
         return true;
     }
 
-    public TestResult runTestsForAlgorithm(int algorithmIndex, TestData[] testCases) {
+    public TestResult runTestsForAlgorithm(int algorithmIndex, TestData[] testCases){
         String algorithmName = AlgorithmList. algorithms[algorithmIndex].name;
         boolean[] results = new boolean[testCases.length];
         long[] executionTimes = new long[testCases.length];
@@ -103,11 +103,11 @@ public class TestEngine {
         return new TestResult(algorithmName, results, executionTimes, compareCounts, swapCounts);
     }
 
-    public TestResult[] runAll() {
+    public TestResult[] runAll(){
         return runAll(10);
     }
 
-    public TestResult[] runAll(int arraySize) {
+    public TestResult[] runAll(int arraySize){
         TestData[] testCases = {
                 new TestData("Sorted", generator.generateSorted(arraySize)),
                 new TestData("Reverse", generator.generateReverseSorted(arraySize)),
