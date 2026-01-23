@@ -27,6 +27,10 @@ public class AlgorithmList {
         new AlgorithmData() {{
             name = "Quick sort";
             classType = QuickSort.class;
+        }},
+        new AlgorithmData() {{
+            name = "Insertion sort";
+            classType = InsertionSort.class;
         }}
     };
 

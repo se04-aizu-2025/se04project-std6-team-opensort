@@ -24,6 +24,9 @@ public class ConsoleView implements IView{
     // Keep track of visual marks
     private char[] marks;
 
+    // Keep track of which elements are considered sorted
+    private boolean[] sorted;
+
     // Visual mark types
     private final char SORTED_MARK_CHAR = '*';
     private final char COMPARE_MARK_CHAR = '?';
@@ -63,6 +66,7 @@ public class ConsoleView implements IView{
         switch (event.getType()){
             case Sorted -> {
                 marks[a] = SORTED_MARK_CHAR;
+                sorted[a] = true;
             }
             case Highlight -> {
                 marks[a] = HIGHLIGHT_MARK_CHAR;
@@ -81,8 +85,11 @@ public class ConsoleView implements IView{
 
         // When a new event is processed, remove all non permanent marks
         for(int i = 0; i < marks.length; i++){
-            // Only the 'sorted' mark is permananet
-            if(marks[i] != SORTED_MARK_CHAR)
+            // Re-mark all sorted elements
+            // Clear al other marks
+            if(sorted[i])
+                marks[i] = SORTED_MARK_CHAR;
+            else
                 marks[i] = EMPTY_MARK_CHAR;
         }
 
@@ -105,6 +112,10 @@ public class ConsoleView implements IView{
                 char tempMark = marks[a];
                 marks[a] = marks[b];
                 marks[b] = tempMark;
+
+                boolean tempSorted = sorted[a];
+                sorted[a] = sorted[b];
+                sorted[b] = tempSorted;
             }
             case CompareEvent compare -> {
                 int a = compare.getA();
@@ -131,6 +142,8 @@ public class ConsoleView implements IView{
         // Initialize empty mark array
         this.marks = new char[array.length];
         Arrays.fill(marks, EMPTY_MARK_CHAR);
+
+        this.sorted = new boolean[array.length];
 
         // Clear all remaining events to process, since they are related to the old state of the array
         this.eventsToProcess.clear();
