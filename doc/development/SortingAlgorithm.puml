@@ -1,0 +1,15 @@
+@startuml
+
+abstract class SortingAlgorithm {
+    SortingAlgorithm(int[]);
+    ..
+    {abstract} int[] sort();
+    ..
+    void swap(int, int);
+    boolean compare(int, int);
+    void sorted(int);
+    void mark(int, MarkEventType, String);
+
+}
+
+@enduml

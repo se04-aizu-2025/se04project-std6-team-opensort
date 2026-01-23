@@ -1,0 +1,45 @@
+@startuml
+
+abstract class model.SortingAlgorithm{
+    SortingAlgorithm(int[])
+    int[] sort()
+    void addEventListener(IView)
+    void removeEventListener(IView)
+}
+
+class model.BubbleSort
+class model.HeapSort
+
+model.SortingAlgorithm <|-- model.BubbleSort
+model.SortingAlgorithm <|-- model.HeapSort
+
+interface view.IView {
+    void onSortEvent(SortEvent)
+    void setArray(int[])
+    void setAlgorithms(String[])
+    void addEventListener(IController)
+    void removeEventListener(IController)
+}
+
+class view.ConsoleView
+
+view.IView <|.. view.ConsoleView
+
+interface controller.IController {
+    void onViewEvent(ViewEvent)
+}
+
+class controller.Controller
+
+controller.IController <|.. controller.Controller
+
+view.IView <-right- controller.IController : Controller knows view
+view.IView <.right. controller.IController : Set array
+
+controller.IController -left-> model.SortingAlgorithm : Controller knows current algorithm
+controller.IController .left.> model.SortingAlgorithm : Restart or change algorithm
+
+view.IView <.left. model.SortingAlgorithm : Send sorting events
+view.IView .right.> controller.IController : Send view events
+
+@enduml

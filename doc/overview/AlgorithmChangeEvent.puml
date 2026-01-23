@@ -1,0 +1,11 @@
+@startuml
+
+IView -> IController : AlgorithmChangeEvent
+IController -> OldAlgorithm : removeEventListener(IView)
+IController -> NewAlgorithm ** : new(lastArray)
+IController -> IView : setArray(lastArray)
+IController -> NewAlgorithm : addEventListener(IView)
+IController -> NewAlgorithm : sort()
+
+hide footbox
+@enduml

@@ -1,0 +1,15 @@
+@startuml
+interface Runnable {
+    void run();
+}
+
+interface IView {
+    void onSortEvent(SortEvent)
+    void setArray(int[])
+    void setAlgorithms(String[])
+    void addEventListener(IController)
+    void removeEventListener(IController)
+}
+
+Runnable <|.. IView
+@enduml
