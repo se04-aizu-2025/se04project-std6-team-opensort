@@ -7,10 +7,11 @@ import com.opensort.sorting.events.SortEvent;
 public interface IView extends Runnable {
 
     // Allow the view to react to events from the currently used sorting algorithm
+    // It is recommended to place the events into a queue to process them
     public void onSortEvent(SortEvent event);
 
     // Tell the view what array it should display
-    // This should also reset other thins related to the state of the array like event queues
+    // This should also reset other things related to the state of the array like event queues
     public void setArray(int[] array);
 
     // Set the list of algorithms the view should provide to the user
