@@ -1,9 +1,6 @@
 package com.opensort.controller;
 
-import com.opensort.sorting.BubbleSort;
-import com.opensort.sorting.HeapSort;
-import com.opensort.sorting.SelectionSort;
-import com.opensort.sorting.SortingAlgorithm;
+import com.opensort.sorting.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -24,8 +21,12 @@ public class AlgorithmList {
             classType = HeapSort.class;
         }},
         new AlgorithmData() {{
-            name = "SelectionSort";
+            name = "Selection sort";
             classType = SelectionSort.class;
+        }},
+        new AlgorithmData() {{
+            name = "Quick sort";
+            classType = QuickSort.class;
         }}
     };
 
