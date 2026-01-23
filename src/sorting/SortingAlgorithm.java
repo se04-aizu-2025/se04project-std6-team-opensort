@@ -53,8 +53,14 @@ public abstract class SortingAlgorithm{
         mark(a, MarkEventType.Sorted, String.format("%d is now sorted", numbers[a]));
     }
 
+    // Highlight an element with a comment
     void highlight(int a, String message){
         mark(a, MarkEventType.Highlight, message);
+    }
+
+    // Allows to create comments that mark no specific element
+    void comment(String message){
+        mark(-1, MarkEventType.Comment, message);
     }
 
     // Fire a compare event for indices a and b
