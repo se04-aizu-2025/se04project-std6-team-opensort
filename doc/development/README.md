@@ -70,7 +70,7 @@ This is internally used to mark an element as sorted. Valid mark event types are
 void quicksort(int[] array, int start, int stop) {
     int pivot = partition(array, start, stop)
     
-    mark(pivot, MarkEventType.Hilight, "Array partitioned around pivot element");
+    mark(pivot, MarkEventType.Highlight, "Array partitioned around pivot element");
     
     quicksort(array, start, pivot - 1);
     quicksort(array, pivot + 1, stop);

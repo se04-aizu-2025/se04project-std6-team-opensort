@@ -25,6 +25,8 @@ public class HeapSort extends SortingAlgorithm{
     // Heapifies the array from the given root node downwards
     public int[] heapify(int[] array, int first, int last, int root)
     {
+        highlight(root, String.format("Checking heap with root %d", array[root]));
+
         int largest = Integer.MIN_VALUE; 
         
         // Get the child nodes of the root

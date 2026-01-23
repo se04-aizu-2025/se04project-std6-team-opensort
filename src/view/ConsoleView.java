@@ -28,6 +28,7 @@ public class ConsoleView implements IView{
     private final char SORTED_MARK_CHAR = '*';
     private final char COMPARE_MARK_CHAR = '?';
     private final char SWAP_MARK_CHAR = '^';
+    private final char HIGHLIGHT_MARK_CHAR = '!';
     private final char EMPTY_MARK_CHAR = ' ';
 
     // List of algorithms the user can choose from
@@ -63,6 +64,9 @@ public class ConsoleView implements IView{
             case Sorted -> {
                 marks[a] = SORTED_MARK_CHAR;
             }
+            case Highlight -> {
+                marks[a] = HIGHLIGHT_MARK_CHAR;
+            }
         }
         System.out.println(event.getMessage());
     }
@@ -92,9 +96,15 @@ public class ConsoleView implements IView{
                 marks[b] = SWAP_MARK_CHAR;
                 System.out.printf("Swapped %d and %d\n", array[a], array[b]);
 
+                // Swap array elements to mirror sorting
                 int temp = array[a];
                 array[a] = array[b];
                 array[b] = temp;
+
+                // Swap marks to preserve their link to the corresponding number
+                char tempMark = marks[a];
+                marks[a] = marks[b];
+                marks[b] = tempMark;
             }
             case CompareEvent compare -> {
                 int a = compare.getA();
