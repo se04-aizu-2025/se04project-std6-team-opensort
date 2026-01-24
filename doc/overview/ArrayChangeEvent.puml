@@ -1,0 +1,11 @@
+@startuml
+
+IView -> IController : ArrayChangeEvent
+IController -> OldAlgorithmInstance : removeListener(IView)
+IController -> NewAlgorithmInstance ** : new(newArray)
+IController -> IView : setArray(newArray)
+IController -> NewAlgorithmInstance : addListener(IView)
+IController -> NewAlgorithmInstance : sort()
+
+hide footbox
+@enduml

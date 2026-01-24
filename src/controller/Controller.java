@@ -1,6 +1,5 @@
 package com.opensort.controller;
 
-import com.opensort.sorting.BubbleSort;
 import com.opensort.sorting.SortingAlgorithm;
 import com.opensort.view.IView;
 import com.opensort.view.events.AlgorithmChangeEvent;
@@ -14,34 +13,51 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Controller implements IController{
 
-    private BlockingQueue<ViewEvent> eventsToProcess = new LinkedBlockingQueue<>();
+    private final BlockingQueue<ViewEvent> eventsToProcess = new LinkedBlockingQueue<>();
     private boolean running = true;
+
+    // The array currently being sorted
     private int[] currentArray;
 
     private final IView view;
+
+    // The ID of the algorithm currently being used
     private int algorithmID = -1;
+    // The current algorithm
     private SortingAlgorithm algorithm;
 
+    // Create a new controller with the given view
     public Controller(IView view){
         this.view = view;
+
+        // Listen to events from the view
         view.addEventListener(this);
+
+        // Pass algorithm list to view
         view.setAlgorithms(AlgorithmList.getStrings());
+    }
+
+    // Create a new controller with the given view and initial array to sort
+    public Controller(IView view, int[] initialArray){
+        this.currentArray = initialArray;
+        this(view);
     }
 
     @Override
     public void onViewEvent(ViewEvent event) {
+        // Add the view event to the event queue
         eventsToProcess.add(event);
-
     }
 
+    // Restart the sorting algorithm
     private void relaunchAlgorithm(){
 
         if (algorithm != null){
+            // Remove the event listener so no new events reach the view
             algorithm.removeEventListener(view);
         }
 
         // Create new Algorithm, abandon old, still running algorithm
-        // Since the view is now unsubscribed, this should be no issue
         try {
             algorithm = AlgorithmList.build(algorithmID, currentArray);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -49,11 +65,12 @@ public class Controller implements IController{
         }
 
         // Reset the array of the view
-        // This should also empty the event queue
         view.setArray(currentArray);
 
+        // Set the view to listen for events from the new algorithm
         algorithm.addEventListener(view);
 
+        // Start the new sorting algorithm
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -66,6 +83,7 @@ public class Controller implements IController{
     public void run() {
         while (running){
             try {
+                // Wait for a new view event
                 ViewEvent nextEvent = eventsToProcess.take();
                 switch (nextEvent){
                     case AlgorithmChangeEvent e -> {
@@ -78,21 +96,25 @@ public class Controller implements IController{
                         }
                     }
                     case ArrayChangeEvent e -> {
+                        // Set new array
                         this.currentArray = e.getArray();
 
+                        // Only restart algorithm if it has been set
                         if(algorithmID >= 0){
                             relaunchAlgorithm();
                         }
                     }
                     case ExitEvent e -> {
+                        // Shut down the controller
                         running = false;
                     }
                     default -> {
                         break;
                     }
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            } catch (InterruptedException e) {
+                // Shut down the controller in case the thread got interrupted
+                running = false;
             }
         }
         view.removeEventListener(this);
