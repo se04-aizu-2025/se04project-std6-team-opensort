@@ -130,6 +130,31 @@ public class TestEngine {
         return end - start;
     }
 
+    public void printTestResults(TestResult[] results){
+        System.out.println("Test Results: ");
+
+        for(TestResult result : results){
+            System.out.println("\nAlgorithm: " + result.algorithmName);
+            System.out.println("-".repeat(90));
+
+            String[] testNames = {"Sorted", "Reverse", "Random"};
+
+            for(int i = 0; i < result.testsPassed.length; i++){
+                String status = result.testsPassed[i] ? "True" : "False";
+                double timeMs = result.executionTimes[i] / 1_000_000.0;
+
+                System.out.printf("  %-12s %s  |  Time: %8.3f ms  |  Compares: %7d  |  Swaps: %7d%n",
+                        testNames[i] + ":",
+                        status,
+                        timeMs,
+                        result.compareCounts[i],
+                        result.swapCounts[i]);
+            }
+        }
+
+        System.out.println("\n" + "=".repeat(90));
+    }
+
     private static class TestData{
         String label;
         int[] data;

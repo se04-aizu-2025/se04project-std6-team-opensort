@@ -3,6 +3,7 @@ import com.opensort.controller.Controller;
 import com.opensort.controller.IController;
 import com.opensort.view.IView;
 import com.opensort.view.ConsoleView;
+import com.opensort.testing.TestEngine;
 
 class Main{
 
@@ -93,8 +94,16 @@ Examples:
             // Check the sub command
             switch (subCommand){
                 case "test" -> {
-                    // TODO launch test system
-                    System.out.println("Currently not implemented.");
+                    TestEngine testEngine = new TestEngine();
+                    TestEngine.TestResult[] results;
+
+                    if(initialArray != null){
+                        results = testEngine.runAll(initialArray.length);
+                    }else{
+                        results = testEngine.runAll();
+                    }
+
+                    testEngine.printTestResults(results);
                     return;
                 }
                 case "cui" -> {
