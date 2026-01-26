@@ -27,6 +27,9 @@ public class ConsoleView implements IView{
     // Keep track of which elements are considered sorted
     private boolean[] sorted;
 
+    // Status message currently being displayed
+    private String statusMessage = "";
+
     // Visual mark types
     private final char SORTED_MARK_CHAR = '*';
     private final char COMPARE_MARK_CHAR = '?';
@@ -50,8 +53,13 @@ public class ConsoleView implements IView{
 
         String[] numbers = Arrays.stream(array).mapToObj(String::valueOf).toArray(String[]::new);
 
+        // Print the current status message
+        System.out.println(statusMessage);
+
+        // Print the current state of the array
         System.out.println(String.join(" ", numbers));
 
+        // Print the markers
         for(int i = 0; i < numbers.length; i++){
             char mark = marks[i];
             // Print the mark of the current number
@@ -72,7 +80,7 @@ public class ConsoleView implements IView{
                 marks[a] = HIGHLIGHT_MARK_CHAR;
             }
         }
-        System.out.println(event.getMessage());
+        statusMessage = event.getMessage();
     }
 
     @Override
@@ -101,7 +109,7 @@ public class ConsoleView implements IView{
 
                 marks[a] = SWAP_MARK_CHAR;
                 marks[b] = SWAP_MARK_CHAR;
-                System.out.printf("Swapped %d and %d\n", array[a], array[b]);
+                statusMessage = String.format("Swapped %d and %d", array[a], array[b]);
 
                 // Swap array elements to mirror sorting
                 int temp = array[a];
@@ -124,12 +132,12 @@ public class ConsoleView implements IView{
                 marks[a] = COMPARE_MARK_CHAR;
                 marks[b] = COMPARE_MARK_CHAR;
 
-                System.out.printf("Comparing %d and %d\n", array[a], array[b]);
+                statusMessage = String.format("Comparing %d and %d", array[a], array[b]);
             }
             case MarkEvent mark -> {
                 handleMarkEvent(mark);
             }
-            default -> System.out.println("Unknown event");
+            default -> statusMessage = "-";
         }
 
         printArray();
