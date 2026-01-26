@@ -110,7 +110,6 @@ Examples:
                 }
                 case "gui" -> {
                     view = new SortingGUI();
-                    return;
                 }
                 case "help" -> {
                     // Print the help message and exit
