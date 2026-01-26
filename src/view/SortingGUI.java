@@ -28,10 +28,11 @@ public class SortingGUI extends JFrame implements IView {
     // Theme Configuration
     private static class Theme {
         static final Color BG = new Color(240, 240, 245);
-        static final Color BOX_DEFAULT = new Color(100, 149, 237); // Cornflower Blue
-        static final Color BOX_COMPARE = new Color(255, 165, 0);   // Orange
-        static final Color BOX_SWAP = new Color(220, 20, 60);      // Crimson
-        static final Color BOX_SORTED = new Color(50, 205, 50);    // Lime Green
+        static final Color BOX_DEFAULT = new Color(100, 149, 237);  // Cornflower Blue
+        static final Color BOX_COMPARE = new Color(255, 165, 0);    // Orange
+        static final Color BOX_SWAP = new Color(220, 20, 60);       // Crimson
+        static final Color BOX_SORTED = new Color(50, 205, 50);     // Lime Green
+        static final Color BOX_HIGHLIGHT = new Color(0, 51, 102);   // Midnight blue
         static final Color TEXT = Color.WHITE;
 
         static final Font FONT_NUM = new Font("Arial", Font.BOLD, 24);
@@ -270,7 +271,7 @@ public class SortingGUI extends JFrame implements IView {
         if (event instanceof CompareEvent) {
             CompareEvent e = (CompareEvent) event;
             panel.updateState(e.getA(), e.getB(), Theme.BOX_COMPARE);
-            updateStatus("Comparing indices " + e.getA() + " and " + e.getB());
+            updateStatus("Comparing " + displayArray[e.getA()] + " and " + displayArray[e.getB()]);
             panel.repaint();
             sleep(currentDelay);
         }
@@ -298,13 +299,21 @@ public class SortingGUI extends JFrame implements IView {
         }
         else if (event instanceof MarkEvent) {
             MarkEvent e = (MarkEvent) event;
-            if (e.getA() < displayArray.length) {
-                panel.updateState(e.getA(), e.getA(), Theme.BOX_SORTED);
-                updateStatus(e.getMessage());
-                if (e.getType() == MarkEventType.Sorted) markAsSorted(e.getA());
-                panel.repaint();
-                sleep(currentDelay);
+            int a = e.getA();
+            if (a < displayArray.length && a > 0) {
+                switch (e.getType()){
+                    case Sorted -> {
+                        panel.updateState(a, a, Theme.BOX_SORTED);
+                        markAsSorted(a);
+                    }
+                    case Highlight -> {
+                        panel.updateState(a, a, Theme.BOX_HIGHLIGHT);
+                    }
+                }
             }
+            updateStatus(e.getMessage());
+            panel.repaint();
+            sleep(currentDelay);
         }
 
         if (isPaused) {
