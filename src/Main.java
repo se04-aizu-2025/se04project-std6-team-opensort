@@ -4,6 +4,7 @@ import com.opensort.controller.IController;
 import com.opensort.view.IView;
 import com.opensort.view.ConsoleView;
 import com.opensort.testing.TestEngine;
+import com.opensort.view.SortingGUI;
 
 class Main{
 
@@ -69,9 +70,7 @@ Examples:
             return;
         }
 
-        // Set default behavior
-        // Currently launches the cui
-        IView view = new ConsoleView();
+        IView view = null;
 
         // Initial array the user can provide in the command
         int[] initialArray = null;
@@ -110,8 +109,7 @@ Examples:
                     view = new ConsoleView();
                 }
                 case "gui" -> {
-                    // TODO launch gui
-                    System.out.println("Currently not implemented.");
+                    view = new SortingGUI();
                     return;
                 }
                 case "help" -> {
@@ -128,6 +126,12 @@ Examples:
         }
 
         IController controller;
+
+        // Set default behavior
+        // Currently launches the cui
+        if(view == null){
+            view = new SortingGUI();
+        }
 
         // Set the initial array of the view and the controller if the user provided it
         if(initialArray != null){
