@@ -17,11 +17,13 @@ public class SelectionSort extends SortingAlgorithm {
                 }
             }
 
-            // Swap the found minimum element with the first element
-            swap(minIndex, i);
-            int temp = numbers[minIndex];
-            numbers[minIndex] = numbers[i];
-            numbers[i] = temp;
+            if(minIndex != i){
+                // Swap the found minimum element with the first element
+                swap(minIndex, i);
+                int temp = numbers[minIndex];
+                numbers[minIndex] = numbers[i];
+                numbers[i] = temp;
+            }
 
             sorted(i);
         }
