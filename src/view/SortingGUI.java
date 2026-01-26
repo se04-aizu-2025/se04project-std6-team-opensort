@@ -300,7 +300,7 @@ public class SortingGUI extends JFrame implements IView {
         else if (event instanceof MarkEvent) {
             MarkEvent e = (MarkEvent) event;
             int a = e.getA();
-            if (a < displayArray.length && a > 0) {
+            if (a < displayArray.length && a >= 0) {
                 switch (e.getType()){
                     case Sorted -> {
                         panel.updateState(a, a, Theme.BOX_SORTED);
