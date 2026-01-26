@@ -7,50 +7,58 @@ import com.opensort.view.events.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 /**
- * A robust, efficient, and user-friendly Swing GUI for visualizing sorting algorithms.
- * Implements the MVC View interface to communicate with the Controller.
+ * A robust efficient and user friendly Swing GUI for visualizing sorting algorithms
+ * Implements the MVC View interface to communicate with the Controller
+ * Uses a local display state to decouple visualization from algorithm speed
  */
 public class SortingGUI extends JFrame implements IView {
 
-    //Constants
-    private static final int WINDOW_WIDTH = 900;
-    private static final int WINDOW_HEIGHT = 600;
-    private static final int BASE_DELAY_MS = 500; // Base speed (1.0x)
+    // Constants
+    private static final int INITIAL_WIDTH = 1000;
+    private static final int INITIAL_HEIGHT = 600;
+    private static final int BASE_DELAY_MS = 500;
 
-    // Drawing Settings
-    private static final int BOX_SIZE = 70;
-    private static final int BOX_GAP = 25;
-    private static final int BOX_ARC = 15;
-    private static final Font FONT_NUMBERS = new Font("Arial", Font.BOLD, 28);
-    private static final Font FONT_STATUS = new Font("SansSerif", Font.PLAIN, 24);
-    private static final Font FONT_CONTROLS = new Font("SansSerif", Font.BOLD, 16);
-    private static final Stroke STROKE_BORDER = new BasicStroke(3);
+    // Theme Configuration
+    private static class Theme {
+        static final Color BG = new Color(240, 240, 245);
+        static final Color BOX_DEFAULT = new Color(100, 149, 237); // Cornflower Blue
+        static final Color BOX_COMPARE = new Color(255, 165, 0);   // Orange
+        static final Color BOX_SWAP = new Color(220, 20, 60);      // Crimson
+        static final Color BOX_SORTED = new Color(50, 205, 50);    // Lime Green
+        static final Color TEXT = Color.WHITE;
 
-    // Color Palette
-    private static final Color COL_BACKGROUND = new Color(240, 240, 245);
-    private static final Color COL_DEFAULT = new Color(100, 149, 237); // Cornflower Blue
-    private static final Color COL_COMPARE = new Color(255, 165, 0);   // Orange
-    private static final Color COL_SWAP = new Color(220, 20, 60);      // Crimson
-    private static final Color COL_SORTED = new Color(50, 205, 50);    // Lime Green
-    private static final Color COL_TEXT = Color.WHITE;
+        static final Font FONT_NUM = new Font("Arial", Font.BOLD, 24);
+        static final Font FONT_UI = new Font("SansSerif", Font.PLAIN, 18);
+        static final Stroke BORDER_STROKE = new BasicStroke(3);
+        static final int MAX_ARC = 15;
+    }
 
-    //Components
+    // Components
     private VisualizerPanel panel;
     private JLabel statusLabel;
     private JButton playBtn, stepBtn;
     private JComboBox<String> speedBox;
     private JMenu algoMenu;
 
-    //State
-    private int[] array;
+    // State
+    // NOTE displayArray is the visual source of truth preventing threading artifacts
+    private int[] displayArray;
     private boolean[] sortedFlags;
     private final List<IController> listeners = new ArrayList<>();
 
-    //Concurrency Control
+    // Queue and Threading
+    private final BlockingQueue<SortEvent> eventQueue = new ArrayBlockingQueue<>(1);
+    private final Thread eventProcessor;
+    private volatile int dataVersion = 0;
+
+    // Flow Control
     private final Object pauseLock = new Object();
     private volatile boolean isPaused = true;
     private volatile boolean stepOnce = false;
@@ -58,15 +66,19 @@ public class SortingGUI extends JFrame implements IView {
 
     public SortingGUI() {
         initUI();
+        eventProcessor = new Thread(this::processEventQueue);
+        eventProcessor.setDaemon(true);
+        eventProcessor.start();
     }
 
-    //UI Setup Methods
+    // UI Setup
+
     private void initUI() {
         setTitle("OpenSort Visualizer");
-        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+        setSize(INITIAL_WIDTH, INITIAL_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        getContentPane().setBackground(COL_BACKGROUND);
+        getContentPane().setBackground(Theme.BG);
 
         setJMenuBar(createMenuBar());
         add(createCenterPanel(), BorderLayout.CENTER);
@@ -75,22 +87,20 @@ public class SortingGUI extends JFrame implements IView {
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
-
-        //Algorithm Menu
         algoMenu = new JMenu("Algorithm");
+        algoMenu.setFont(Theme.FONT_UI);
 
-        //Settings Menu
         JMenu settingsMenu = new JMenu("Settings");
+        settingsMenu.setFont(Theme.FONT_UI);
 
         JMenuItem randomizeItem = new JMenuItem("Randomize Data");
         randomizeItem.addActionListener(e -> generateNewData(8, 1, 99));
 
-        JMenuItem customInputItem = new JMenuItem("Input Custom Data...");
+        JMenuItem customInputItem = new JMenuItem("Input Custom Data");
         customInputItem.addActionListener(e -> promptForCustomData());
 
         settingsMenu.add(randomizeItem);
         settingsMenu.add(customInputItem);
-
         menuBar.add(algoMenu);
         menuBar.add(settingsMenu);
         return menuBar;
@@ -99,13 +109,10 @@ public class SortingGUI extends JFrame implements IView {
     private JPanel createCenterPanel() {
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.setOpaque(false);
-
         statusLabel = new JLabel("Select an Algorithm to start", SwingConstants.CENTER);
-        statusLabel.setFont(FONT_STATUS);
+        statusLabel.setFont(Theme.FONT_UI.deriveFont(24f));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
-
         panel = new VisualizerPanel();
-
         centerPanel.add(statusLabel, BorderLayout.NORTH);
         centerPanel.add(panel, BorderLayout.CENTER);
         return centerPanel;
@@ -114,22 +121,21 @@ public class SortingGUI extends JFrame implements IView {
     private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel();
         bottomPanel.setOpaque(false);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 20, 0));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
 
         playBtn = new JButton("▶ Play");
-        playBtn.setFont(FONT_CONTROLS);
+        playBtn.setFont(Theme.FONT_UI);
         playBtn.addActionListener(e -> togglePlay());
 
         stepBtn = new JButton("⏭ Step");
-        stepBtn.setFont(FONT_CONTROLS);
+        stepBtn.setFont(Theme.FONT_UI);
         stepBtn.setEnabled(false);
         stepBtn.addActionListener(e -> triggerStep());
 
         String[] speeds = { "0.5x", "1.0x", "1.5x", "2.0x", "2.5x" };
         speedBox = new JComboBox<>(speeds);
-        speedBox.setFont(FONT_CONTROLS);
-        speedBox.setSelectedIndex(1); // Default to 1.0x
-        speedBox.setToolTipText("Animation Speed");
+        speedBox.setFont(Theme.FONT_UI);
+        speedBox.setSelectedIndex(1);
         speedBox.addActionListener(e -> updateSpeed());
 
         bottomPanel.add(playBtn);
@@ -141,7 +147,8 @@ public class SortingGUI extends JFrame implements IView {
         return bottomPanel;
     }
 
-    //Core Logic & Events
+    // Logic
+
     private void updateSpeed() {
         String selected = (String) speedBox.getSelectedItem();
         if (selected == null) return;
@@ -150,49 +157,55 @@ public class SortingGUI extends JFrame implements IView {
     }
 
     private void generateNewData(int size, int min, int max) {
-        Random rand = new Random();
-        int[] newArr = new int[size];
-        for (int i = 0; i < size; i++) {
-            newArr[i] = rand.nextInt(max - min + 1) + min;
-        }
+        int[] newArr = new Random().ints(size, min, max + 1).toArray();
         fireViewEvent(new ArrayChangeEvent(newArr));
         resetControls();
     }
 
-    private void promptForCustomData() {
-        String input = JOptionPane.showInputDialog(this,
-                "Enter numbers separated by commas (e.g. 5, 1, 4, 2):",
-                "Input Custom Data", JOptionPane.PLAIN_MESSAGE);
-
+    private boolean promptForCustomData() {
+        String input = JOptionPane.showInputDialog(this, "Enter numbers e g five one four");
         if (input != null && !input.trim().isEmpty()) {
             try {
                 String[] parts = input.split(",");
                 int[] newArr = new int[parts.length];
-                for (int i = 0; i < parts.length; i++) {
-                    newArr[i] = Integer.parseInt(parts[i].trim());
-                }
+                for (int i = 0; i < parts.length; i++) newArr[i] = Integer.parseInt(parts[i].trim());
                 fireViewEvent(new ArrayChangeEvent(newArr));
                 resetControls();
+                return true;
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Invalid input! Use numbers separated by commas.",
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid number format", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+        return false;
     }
 
-    //IView Implementation
+    // IView Implementation
+
     @Override
     public void run() {
-        SwingUtilities.invokeLater(() -> setVisible(true));
-        generateNewData(8, 1, 99); // Generate initial data
+        SwingUtilities.invokeLater(() -> {
+            setVisible(true);
+            if (displayArray == null || displayArray.length == 0) {
+                String[] options = {"Input Custom Data", "Generate Random"};
+                int choice = JOptionPane.showOptionDialog(this, "No data detected Initialize", "Welcome",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
+
+                if (choice == JOptionPane.YES_OPTION) {
+                    if (!promptForCustomData()) generateNewData(8, 1, 99);
+                } else {
+                    generateNewData(8, 1, 99);
+                }
+            }
+        });
     }
 
     @Override
     public void setArray(int[] array) {
-        this.array = array;
         if (array != null) {
+            this.displayArray = Arrays.copyOf(array, array.length);
             this.sortedFlags = new boolean[array.length];
+            this.dataVersion++;
+            this.eventQueue.clear();
         }
         panel.repaint();
     }
@@ -206,10 +219,8 @@ public class SortingGUI extends JFrame implements IView {
             JMenuItem item = new JMenuItem(name);
             item.addActionListener(e -> {
                 fireViewEvent(new AlgorithmChangeEvent(id));
-                updateStatus(name + " Selected. Press Play.");
+                updateStatus(name + " Selected Press Play");
                 resetControls();
-                // Reset sorted flags just in case
-                if (array != null) sortedFlags = new boolean[array.length];
                 panel.repaint();
             });
             algoMenu.add(item);
@@ -218,58 +229,107 @@ public class SortingGUI extends JFrame implements IView {
 
     @Override
     public void onSortEvent(SortEvent event) {
-        //Update State based on event
-        if (event instanceof CompareEvent) {
-            CompareEvent e = (CompareEvent) event;
-            panel.updateState(e.getA(), e.getB(), COL_COMPARE);
-            updateStatus("Comparing " + e.getA() + " and " + e.getB());
+        try {
+            eventQueue.put(event);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
-        else if (event instanceof SwapEvent) {
-            SwapEvent e = (SwapEvent) event;
-            panel.updateState(e.getA(), e.getB(), COL_SWAP);
-            updateStatus("Swapping!");
-        }
-        else if (event instanceof MarkEvent) {
-            MarkEvent e = (MarkEvent) event;
-            panel.updateState(e.getA(), e.getA(), COL_SORTED);
-            updateStatus(e.getMessage());
+    }
 
-            if (e.getType() == MarkEventType.Sorted) {
-                markAsSorted(e.getA());
-            }
-        }
-
-        panel.repaint();
-
-        //Control Animation Flow
-        synchronized (pauseLock) {
-            if (isPaused) {
-                while (isPaused && !stepOnce) {
-                    try { pauseLock.wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    private void processEventQueue() {
+        while (true) {
+            try {
+                synchronized (pauseLock) {
+                    while (isPaused && !stepOnce) {
+                        pauseLock.wait();
+                    }
+                    stepOnce = false;
                 }
-                stepOnce = false;
-            } else {
-                try { Thread.sleep(currentDelay); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+
+                SortEvent event = eventQueue.take();
+                processSingleEvent(event);
+
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
     }
 
-    //Helper Methods
+    private void processSingleEvent(SortEvent event) {
+        int startVersion = this.dataVersion;
+        if (displayArray == null) return;
+
+        // Bounds Check
+        int maxIdx = displayArray.length - 1;
+        if ((event instanceof CompareEvent && (((CompareEvent)event).getA() > maxIdx || ((CompareEvent)event).getB() > maxIdx)) ||
+                (event instanceof SwapEvent && (((SwapEvent)event).getA() > maxIdx || ((SwapEvent)event).getB() > maxIdx))) {
+            return;
+        }
+
+        if (event instanceof CompareEvent) {
+            CompareEvent e = (CompareEvent) event;
+            panel.updateState(e.getA(), e.getB(), Theme.BOX_COMPARE);
+            updateStatus("Comparing indices " + e.getA() + " and " + e.getB());
+            panel.repaint();
+            sleep(currentDelay);
+        }
+        else if (event instanceof SwapEvent) {
+            SwapEvent e = (SwapEvent) event;
+            updateStatus("Swapping " + displayArray[e.getA()] + " and " + displayArray[e.getB()]);
+
+            // Animation
+            panel.startSwapAnimation(e.getA(), e.getB());
+            int frames = 20;
+            for (int i = 0; i <= frames; i++) {
+                if (this.dataVersion != startVersion) break;
+                panel.setAnimationProgress((float) i / frames);
+                panel.repaint();
+                sleep(currentDelay / frames);
+            }
+            panel.stopAnimation();
+
+            // Update local display state after animation
+            int temp = displayArray[e.getA()];
+            displayArray[e.getA()] = displayArray[e.getB()];
+            displayArray[e.getB()] = temp;
+
+            panel.updateState(e.getA(), e.getB(), Theme.BOX_SWAP);
+        }
+        else if (event instanceof MarkEvent) {
+            MarkEvent e = (MarkEvent) event;
+            if (e.getA() < displayArray.length) {
+                panel.updateState(e.getA(), e.getA(), Theme.BOX_SORTED);
+                updateStatus(e.getMessage());
+                if (e.getType() == MarkEventType.Sorted) markAsSorted(e.getA());
+                panel.repaint();
+                sleep(currentDelay);
+            }
+        }
+
+        if (isPaused) {
+            SwingUtilities.invokeLater(() -> stepBtn.setEnabled(true));
+        }
+    }
+
+    private void sleep(int ms) {
+        try { Thread.sleep(ms); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+    }
+
     private void markAsSorted(int index) {
         if (sortedFlags == null || index < 0 || index >= sortedFlags.length) return;
         sortedFlags[index] = true;
-        // Check if fully sorted
         boolean allSorted = true;
         for (boolean b : sortedFlags) if (!b) allSorted = false;
-
         if (allSorted) {
             SwingUtilities.invokeLater(() -> {
-                statusLabel.setText("Sorting Complete!");
-                JOptionPane.showMessageDialog(this, "The array has been fully sorted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                statusLabel.setText("Sorting Complete");
+                JOptionPane.showMessageDialog(this, "The array has been fully sorted", "Success", JOptionPane.INFORMATION_MESSAGE);
                 resetControls();
             });
         }
     }
+
     private void updateStatus(String text) {
         SwingUtilities.invokeLater(() -> statusLabel.setText(text));
     }
@@ -289,6 +349,7 @@ public class SortingGUI extends JFrame implements IView {
 
     private void triggerStep() {
         if (!isPaused) return;
+        stepBtn.setEnabled(false);
         stepOnce = true;
         synchronized (pauseLock) { pauseLock.notifyAll(); }
     }
@@ -297,68 +358,98 @@ public class SortingGUI extends JFrame implements IView {
         for (IController listener : listeners) listener.onViewEvent(event);
     }
 
-    @Override
-    public void addEventListener(IController listener) { listeners.add(listener); }
+    @Override public void addEventListener(IController l) { listeners.add(l); }
+    @Override public void removeEventListener(IController l) { listeners.remove(l); }
 
-    @Override
-    public void removeEventListener(IController listener) { listeners.remove(listener); }
+    // Visualizer Component
 
-    //Visualizer Component
     private class VisualizerPanel extends JPanel {
         private int idx1 = -1, idx2 = -1;
-        private Color activeColor = COL_DEFAULT;
-        public VisualizerPanel() {
-            setOpaque(false);
-        }
+        private Color activeColor = Theme.BOX_DEFAULT;
+        private boolean isAnimating = false;
+        private int swapIdx1 = -1, swapIdx2 = -1;
+        private float progress = 0f;
+
+        public VisualizerPanel() { setOpaque(false); }
 
         public void updateState(int a, int b, Color c) {
-            this.idx1 = a;
-            this.idx2 = b;
-            this.activeColor = c;
+            this.idx1 = a; this.idx2 = b; this.activeColor = c;
         }
+
+        public void startSwapAnimation(int a, int b) {
+            this.isAnimating = true;
+            this.swapIdx1 = a; this.swapIdx2 = b;
+            this.progress = 0f;
+            this.activeColor = Theme.BOX_SWAP;
+            this.idx1 = -1; this.idx2 = -1;
+        }
+
+        public void setAnimationProgress(float p) { this.progress = p; }
+        public void stopAnimation() { this.isAnimating = false; }
 
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
-            if (array == null) return;
+            int[] arr = displayArray;
+            if (arr == null || arr.length == 0) return;
 
             Graphics2D g2 = (Graphics2D) g;
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+            g2.setFont(Theme.FONT_NUM);
 
-            g2.setFont(FONT_NUMBERS);
-
-            // Calculate layout centering
-            int totalWidth = (array.length * BOX_SIZE) + ((array.length - 1) * BOX_GAP);
+            int boxSize = Math.min(70, (getWidth() - 100) / arr.length);
+            int gap = Math.max(5, boxSize / 4);
+            int totalWidth = (arr.length * boxSize) + ((arr.length - 1) * gap);
             int startX = (getWidth() - totalWidth) / 2;
-            int startY = (getHeight() - BOX_SIZE) / 2;
+            int startY = (getHeight() - boxSize) / 2;
+            int arc = Math.min(Theme.MAX_ARC, boxSize / 3);
 
-            for (int i = 0; i < array.length; i++) {
-                int x = startX + i * (BOX_SIZE + BOX_GAP);
+            for (int i = 0; i < arr.length; i++) {
+                int x = startX + i * (boxSize + gap);
+                int y = startY;
+                Color boxColor = Theme.BOX_DEFAULT;
 
-                // Determine color
-                if (sortedFlags != null && sortedFlags[i]) {
-                    g2.setColor(COL_SORTED);
-                } else if (i == idx1 || i == idx2) {
-                    g2.setColor(activeColor);
-                } else {
-                    g2.setColor(COL_DEFAULT);
+                // Animation Logic
+                if (isAnimating) {
+                    if (i == swapIdx1) {
+                        int targetX = startX + swapIdx2 * (boxSize + gap);
+                        int sourceX = x;
+                        x = (int) (sourceX + (targetX - sourceX) * progress);
+                        y -= (int) (Math.sin(progress * Math.PI) * (boxSize / 3.0));
+                        boxColor = Theme.BOX_SWAP;
+                    }
+                    else if (i == swapIdx2) {
+                        int targetX = startX + swapIdx1 * (boxSize + gap);
+                        int sourceX = x;
+                        x = (int) (sourceX + (targetX - sourceX) * progress);
+                        y += (int) (Math.sin(progress * Math.PI) * (boxSize / 3.0));
+                        boxColor = Theme.BOX_SWAP;
+                    }
                 }
 
-                // Draw Box
-                g2.fillRoundRect(x, startY, BOX_SIZE, BOX_SIZE, BOX_ARC, BOX_ARC);
+                // Coloring
+                if (!isAnimating) {
+                    if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
+                    else if (i == idx1 || i == idx2) boxColor = activeColor;
+                } else if (i != swapIdx1 && i != swapIdx2) {
+                    if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
+                }
 
-                // Draw Border
+                g2.setColor(boxColor);
+                g2.fillRoundRect(x, y, boxSize, boxSize, arc, arc);
+
                 g2.setColor(g2.getColor().darker());
-                g2.setStroke(STROKE_BORDER);
-                g2.drawRoundRect(x, startY, BOX_SIZE, BOX_SIZE, BOX_ARC, BOX_ARC);
+                g2.setStroke(Theme.BORDER_STROKE);
+                g2.drawRoundRect(x, y, boxSize, boxSize, arc, arc);
 
-                // Draw Number
-                g2.setColor(COL_TEXT);
-                String num = String.valueOf(array[i]);
+                g2.setColor(Theme.TEXT);
+                String num = String.valueOf(arr[i]);
                 FontMetrics fm = g2.getFontMetrics();
-                int textX = x + (BOX_SIZE - fm.stringWidth(num)) / 2;
-                int textY = startY + (BOX_SIZE - fm.getHeight()) / 2 + fm.getAscent() - 2;
+                java.awt.geom.Rectangle2D rect = fm.getStringBounds(num, g2);
+                int textX = x + (boxSize - (int)rect.getWidth()) / 2;
+                int textY = y + (boxSize - (int)rect.getHeight()) / 2 + fm.getAscent();
                 g2.drawString(num, textX, textY);
             }
         }
