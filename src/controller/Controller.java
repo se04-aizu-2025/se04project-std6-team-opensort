@@ -59,13 +59,13 @@ public class Controller implements IController{
 
         // Create new Algorithm, abandon old, still running algorithm
         try {
-            algorithm = AlgorithmList.build(algorithmID, currentArray);
+            algorithm = AlgorithmList.build(algorithmID, currentArray.clone());
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
 
         // Reset the array of the view
-        view.setArray(currentArray);
+        view.setArray(currentArray.clone());
 
         // Set the view to listen for events from the new algorithm
         algorithm.addEventListener(view);

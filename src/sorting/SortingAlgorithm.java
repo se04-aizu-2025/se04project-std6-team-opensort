@@ -23,40 +23,50 @@ public abstract class SortingAlgorithm{
     // Implement the sorting algorithm
     public abstract  int[] sort();
 
-    public void addEventListener(IView listener){
+    public synchronized void addEventListener(IView listener){
         eventListeners.add(listener);
     }
 
-    public void removeEventListener(IView listener){
+    public synchronized void removeEventListener(IView listener){
         eventListeners.remove(listener);
     }
 
     // Broadcast an event to all current event listeners
-    private void fireEvent(SortEvent event){
+    private synchronized void fireEvent(SortEvent event){
         for(IView listener : eventListeners){
             listener.onSortEvent(event);
         }
     }
 
     // Fire a swap event for indices a and b
-    public void swap(int a, int b){
+    void swap(int a, int b){
         fireEvent(new SwapEvent(a, b));
     }
 
     // Mark the element at the index a
-    public void mark(int a, MarkEventType type, String message){
+    void mark(int a, MarkEventType type, String message){
         fireEvent(new MarkEvent(a, type, message));
     }
 
     // Mark the element at index a as sorted
-    public void sorted(int a){
+    void sorted(int a){
         mark(a, MarkEventType.Sorted, String.format("%d is now sorted", numbers[a]));
+    }
+
+    // Highlight an element with a comment
+    void highlight(int a, String message){
+        mark(a, MarkEventType.Highlight, message);
+    }
+
+    // Allows to create comments that mark no specific element
+    void comment(String message){
+        mark(-1, MarkEventType.Comment, message);
     }
 
     // Fire a compare event for indices a and b
     // Returns a boolean so that it can be used in if and loop conditions
     // Always returns true
-    public boolean compare(int a, int b){
+    boolean compare(int a, int b){
         fireEvent(new CompareEvent(a, b));
         return true;
     }

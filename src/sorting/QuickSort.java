@@ -7,35 +7,42 @@ public class QuickSort extends SortingAlgorithm{
     }
 
     public int[] sort(){
-        quickSort(numbers, 0, numbers.length - 1);
+        quickSort(0, numbers.length - 1);
         return numbers;
     }
 
-    private void quickSort(int[] arr, int low, int high){
+    private void quickSort(int low, int high){
         if (low < high){
-            int pi = partition(arr, low, high);
+            comment(String.format("Sorting from %d to %d", numbers[low], numbers[high]));
+            int pi = partition(low, high);
+            sorted(pi);
 
-            quickSort(arr, low, pi - 1);
-            quickSort(arr, pi + 1, high);
+            quickSort(low, pi - 1);
+            quickSort(pi + 1, high);
+        } else if (low == high) {
+            sorted(low);
         }
     }
 
-    private int partition(int[] arr, int low, int high){
-        int pivot = arr[high];
+    private int partition(int low, int high){
+        int pivot = numbers[high];
+        highlight(high, String.format("Chose %d as the pivot element", pivot));
         int i = low - 1;
 
         for (int j = low; j < high; j++){
-            if (arr[j] < pivot) {
+            if (compare(j, high) && numbers[j] < pivot) {
                 i++;
-                int temp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = temp;
+                swap(i, j);
+                int temp = numbers[i];
+                numbers[i] = numbers[j];
+                numbers[j] = temp;
             }
         }
 
-        int temp = arr[i + 1];
-        arr[i + 1] = arr[high];
-        arr[high] = temp;
+        swap(i + 1, high);
+        int temp = numbers[i + 1];
+        numbers[i + 1] = numbers[high];
+        numbers[high] = temp;
 
         return i + 1;
     }

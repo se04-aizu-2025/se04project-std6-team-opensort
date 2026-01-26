@@ -7,24 +7,25 @@ public class InsertionSort extends SortingAlgorithm {
     }
 
     public int[] sort() {
-        int[] array = numbers.clone();
+        for (int i = 1; i < numbers.length; i++) {
+            int j = i;
 
-        // Start from the second element
-        for (int i = 1; i < array.length; i++) {
-            int key = array[i];
-            int j = i - 1;
+            while (j > 0 && (compare(j-1, j) && numbers[j - 1] > numbers[j])) {
+                // Perform the swap
+                swap(j, j - 1);
+                int temp = numbers[j];
+                numbers[j] = numbers[j - 1];
+                numbers[j - 1] = temp;
 
-            // Move elements of array that are greater than key
-            // to one position ahead of their current position
-            while (j >= 0 && array[j] > key) {
-                array[j + 1] = array[j];
+                // Move the pointer to the left to continue checking
                 j--;
             }
             
-            // Insert the key
-            array[j + 1] = key;
+            sorted(j);
         }
 
-        return array;
+        sorted(numbers.length - 1);
+
+        return numbers;
     }
 }

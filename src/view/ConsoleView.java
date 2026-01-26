@@ -20,8 +20,29 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ConsoleView implements IView{
 
     private int[] array;
+
+    // Keep track of visual marks
+    private char[] marks;
+
+    // Keep track of which elements are considered sorted
+    private boolean[] sorted;
+
+    // Status message currently being displayed
+    private String statusMessage = "";
+
+    // Visual mark types
+    private final char SORTED_MARK_CHAR = '*';
+    private final char COMPARE_MARK_CHAR = '?';
+    private final char SWAP_MARK_CHAR = '^';
+    private final char HIGHLIGHT_MARK_CHAR = '!';
+    private final char EMPTY_MARK_CHAR = ' ';
+
+    // List of algorithms the user can choose from
     private String[] algorithms = {};
-    private ConcurrentLinkedQueue<SortEvent> eventsToProcess = new ConcurrentLinkedQueue<>();
+
+    // Events that need to be processed
+    private final ConcurrentLinkedQueue<SortEvent> eventsToProcess = new ConcurrentLinkedQueue<>();
+
     private boolean running = true;
     private Scanner scanner;
 
@@ -29,20 +50,37 @@ public class ConsoleView implements IView{
 
     // Print the current state of the array
     private void printArray(){
-        for(int element : array){
-            System.out.printf("%d ", element);
+
+        String[] numbers = Arrays.stream(array).mapToObj(String::valueOf).toArray(String[]::new);
+
+        // Print the current status message
+        System.out.println(statusMessage);
+
+        // Print the current state of the array
+        System.out.println(String.join(" ", numbers));
+
+        // Print the markers
+        for(int i = 0; i < numbers.length; i++){
+            char mark = marks[i];
+            // Print the mark of the current number
+            System.out.printf("%s ", String.valueOf(mark).repeat(numbers[i].length()));
         }
         System.out.println();
     }
 
     // Handle a mark event
     private void handleMarkEvent(MarkEvent event){
+        int a = event.getA();
         switch (event.getType()){
             case Sorted -> {
-                System.out.printf("Sorted %d\n", array[event.getA()]);
+                marks[a] = SORTED_MARK_CHAR;
+                sorted[a] = true;
             }
-            default -> System.out.println("Unknown event");
+            case Highlight -> {
+                marks[a] = HIGHLIGHT_MARK_CHAR;
+            }
         }
+        statusMessage = event.getMessage();
     }
 
     @Override
@@ -52,33 +90,69 @@ public class ConsoleView implements IView{
 
     // Function to handle a given sort event
     private void handleEvent(SortEvent event){
+
+        // When a new event is processed, remove all non permanent marks
+        for(int i = 0; i < marks.length; i++){
+            // Re-mark all sorted elements
+            // Clear al other marks
+            if(sorted[i])
+                marks[i] = SORTED_MARK_CHAR;
+            else
+                marks[i] = EMPTY_MARK_CHAR;
+        }
+
         // Handle the different types of sorting events
         switch (event){
             case SwapEvent swap -> {
                 int a = swap.getA();
                 int b = swap.getB();
 
-                System.out.printf("Swapped %d and %d:\t", array[a], array[b]);
+                marks[a] = SWAP_MARK_CHAR;
+                marks[b] = SWAP_MARK_CHAR;
+                statusMessage = String.format("Swapped %d and %d", array[a], array[b]);
 
+                // Swap array elements to mirror sorting
                 int temp = array[a];
                 array[a] = array[b];
                 array[b] = temp;
 
-                printArray();
+                // Swap marks to preserve their link to the corresponding number
+                char tempMark = marks[a];
+                marks[a] = marks[b];
+                marks[b] = tempMark;
+
+                boolean tempSorted = sorted[a];
+                sorted[a] = sorted[b];
+                sorted[b] = tempSorted;
             }
             case CompareEvent compare -> {
-                System.out.printf("Comparing %d and %d\n", array[compare.getA()], array[compare.getB()]);
+                int a = compare.getA();
+                int b = compare.getB();
+
+                marks[a] = COMPARE_MARK_CHAR;
+                marks[b] = COMPARE_MARK_CHAR;
+
+                statusMessage = String.format("Comparing %d and %d", array[a], array[b]);
             }
             case MarkEvent mark -> {
                 handleMarkEvent(mark);
             }
-            default -> System.out.println("Unknown event");
+            default -> statusMessage = "-";
         }
+
+        printArray();
     }
 
     @Override
     public void setArray(int[] array) {
         this.array = array;
+
+        // Initialize empty mark array
+        this.marks = new char[array.length];
+        Arrays.fill(marks, EMPTY_MARK_CHAR);
+
+        this.sorted = new boolean[array.length];
+
         // Clear all remaining events to process, since they are related to the old state of the array
         this.eventsToProcess.clear();
     }
