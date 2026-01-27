@@ -31,6 +31,10 @@ public class AlgorithmList {
         new AlgorithmData() {{
             name = "Insertion sort";
             classType = InsertionSort.class;
+        }},
+        new AlgorithmData() {{
+            name = "Comb sort";
+            classType = CombSort.class;
         }}
     };
 
