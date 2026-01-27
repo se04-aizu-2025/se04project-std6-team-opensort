@@ -11,14 +11,15 @@ class Main{
     // Print help for application usage
     private static void printHelp(){
         System.out.println("""
-Usage: java -jar opensort.jar [COMMAND] [ARRAY]
+Usage: java -jar opensort.jar [COMMAND] [ARRAY | LENGTH]
 
 Commands:
 If no command is provided, the GUI will be launched.
 
     test
         Run testcases for all available sorting algorithms and print the result to the command line.
-        This command ignores the ARRAY parameter.
+        This command uses the second LENGTH parameter.
+        This parameter indicates how long the test array should be. The default length is 100.
     cui
         Launch the CUI.
         Uses the ARRAY if provided.
@@ -96,11 +97,18 @@ Examples:
                     TestEngine testEngine = new TestEngine();
                     TestEngine.TestResult[] results;
 
-                    if(initialArray != null){
-                        results = testEngine.runAll(initialArray.length);
-                    }else{
-                        results = testEngine.runAll();
+                    int N = 100;
+                    // Try to get the array length from the command line
+                    try{
+                        N = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException _){
+                        System.out.printf("Error: '%s' is not a valid length.\n", args[1]);
+                        return;
+                    } catch (ArrayIndexOutOfBoundsException _){
+                        // Ignore if there was no length parameter provided
                     }
+
+                    results = testEngine.runAll(N);
 
                     testEngine.printTestResults(results);
                     return;

@@ -19,14 +19,15 @@ It can be run from the command line using the following command: ``java -jar ope
 By providing the subcommand _help_, the usage of the software will be explained.
 ```
 user@pc % java -jar opensort.jar help
-Usage: java -jar opensort.jar [COMMAND] [ARRAY]
+Usage: java -jar opensort.jar [COMMAND] [ARRAY | LENGTH]
 
 Commands:
 If no command is provided, the GUI will be launched.
 
     test
         Run testcases for all available sorting algorithms and print the result to the command line.
-        This command ignores the ARRAY parameter.
+        This command uses the second LENGTH parameter.
+        This parameter indicates how long the test array should be. The default length is 100.
     cui
         Launch the CUI.
         Uses the ARRAY if provided.
