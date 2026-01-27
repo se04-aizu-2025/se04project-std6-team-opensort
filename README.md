@@ -5,13 +5,15 @@ intended as a programming or algorithmic teaching tool.
 
 ## Prerequisites
 The project was developed and tested using JDK 25.
-An installation of this version of java or newer is recommended in order to build and run the software.
+An installation of this version of java or newer is required in order to build and run the software.
+To check the currently installed java version, run ```java --version``` and ```javac --version```.
 
 # Getting started
 This section describes how to build and launch the software.
 
 ## Building
-To be done
+Depending on your platform, run the __build.sh__, __build.bat__ or __build.ps1__ file.  
+This will create a jar file called __opensort.jar__.
 
 ## Running
 The software is distributed as a .jar file.  
