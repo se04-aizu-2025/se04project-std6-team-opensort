@@ -7,6 +7,7 @@ public class InsertionSort extends SortingAlgorithm {
     }
 
     public int[] sort() {
+        sorted(0);
         for (int i = 1; i < numbers.length; i++) {
             int j = i;
 
@@ -23,8 +24,6 @@ public class InsertionSort extends SortingAlgorithm {
             
             sorted(j);
         }
-
-        sorted(numbers.length - 1);
 
         return numbers;
     }

@@ -274,10 +274,12 @@ public class SortingGUI extends JFrame implements IView {
         }
         else if (event instanceof SwapEvent) {
             SwapEvent e = (SwapEvent) event;
-            updateStatus("Swapping " + displayArray[e.getA()] + " and " + displayArray[e.getB()]);
+            int a = e.getA();
+            int b = e.getB();
+            updateStatus("Swapping " + displayArray[a] + " and " + displayArray[b]);
 
             // Animation
-            panel.startSwapAnimation(e.getA(), e.getB());
+            panel.startSwapAnimation(a, b);
             int frames = 20;
             for (int i = 0; i <= frames; i++) {
                 if (this.dataVersion != startVersion) break;
@@ -288,9 +290,14 @@ public class SortingGUI extends JFrame implements IView {
             panel.stopAnimation();
 
             // Update local display state after animation
-            int temp = displayArray[e.getA()];
-            displayArray[e.getA()] = displayArray[e.getB()];
-            displayArray[e.getB()] = temp;
+            int temp = displayArray[a];
+            displayArray[a] = displayArray[b];
+            displayArray[b] = temp;
+
+            // Update sorted array
+            boolean tempSorted = sortedFlags[a];
+            sortedFlags[a] = sortedFlags[b];
+            sortedFlags[b] = tempSorted;
 
             panel.updateState(e.getA(), e.getB(), Theme.BOX_SWAP);
         }
@@ -447,8 +454,8 @@ public class SortingGUI extends JFrame implements IView {
 
                 // Coloring
                 if (!isAnimating) {
-                    if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
-                    else if (i == idx1 || i == idx2) boxColor = activeColor;
+                    if (i == idx1 || i == idx2) boxColor = activeColor;
+                    else if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
                 } else if (i != swapIdx1 && i != swapIdx2) {
                     if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
                 }
