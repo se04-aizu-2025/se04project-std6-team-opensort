@@ -7,11 +7,9 @@ import com.opensort.view.events.*;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A robust efficient and user friendly Swing GUI for visualizing sorting algorithms
@@ -28,10 +26,11 @@ public class SortingGUI extends JFrame implements IView {
     // Theme Configuration
     private static class Theme {
         static final Color BG = new Color(240, 240, 245);
-        static final Color BOX_DEFAULT = new Color(100, 149, 237); // Cornflower Blue
-        static final Color BOX_COMPARE = new Color(255, 165, 0);   // Orange
-        static final Color BOX_SWAP = new Color(220, 20, 60);      // Crimson
-        static final Color BOX_SORTED = new Color(50, 205, 50);    // Lime Green
+        static final Color BOX_DEFAULT = new Color(100, 149, 237);  // Cornflower Blue
+        static final Color BOX_COMPARE = new Color(255, 165, 0);    // Orange
+        static final Color BOX_SWAP = new Color(220, 20, 60);       // Crimson
+        static final Color BOX_SORTED = new Color(50, 205, 50);     // Lime Green
+        static final Color BOX_HIGHLIGHT = new Color(0, 51, 102);   // Midnight blue
         static final Color TEXT = Color.WHITE;
 
         static final Font FONT_NUM = new Font("Arial", Font.BOLD, 24);
@@ -54,7 +53,7 @@ public class SortingGUI extends JFrame implements IView {
     private final List<IController> listeners = new ArrayList<>();
 
     // Queue and Threading
-    private final BlockingQueue<SortEvent> eventQueue = new ArrayBlockingQueue<>(1);
+    private final ConcurrentLinkedQueue<SortEvent> eventQueue = new ConcurrentLinkedQueue<>();
     private final Thread eventProcessor;
     private volatile int dataVersion = 0;
 
@@ -79,6 +78,7 @@ public class SortingGUI extends JFrame implements IView {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         getContentPane().setBackground(Theme.BG);
+        setLocationRelativeTo(null);
 
         setJMenuBar(createMenuBar());
         add(createCenterPanel(), BorderLayout.CENTER);
@@ -202,11 +202,13 @@ public class SortingGUI extends JFrame implements IView {
     @Override
     public void setArray(int[] array) {
         if (array != null) {
-            this.displayArray = Arrays.copyOf(array, array.length);
+            this.displayArray = array;
             this.sortedFlags = new boolean[array.length];
             this.dataVersion++;
             this.eventQueue.clear();
         }
+        resetControls();
+        panel.reset();
         panel.repaint();
     }
 
@@ -229,11 +231,7 @@ public class SortingGUI extends JFrame implements IView {
 
     @Override
     public void onSortEvent(SortEvent event) {
-        try {
-            eventQueue.put(event);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        eventQueue.add(event);
     }
 
     private void processEventQueue() {
@@ -246,7 +244,7 @@ public class SortingGUI extends JFrame implements IView {
                     stepOnce = false;
                 }
 
-                SortEvent event = eventQueue.take();
+                SortEvent event = eventQueue.poll();
                 processSingleEvent(event);
 
             } catch (InterruptedException e) {
@@ -270,16 +268,18 @@ public class SortingGUI extends JFrame implements IView {
         if (event instanceof CompareEvent) {
             CompareEvent e = (CompareEvent) event;
             panel.updateState(e.getA(), e.getB(), Theme.BOX_COMPARE);
-            updateStatus("Comparing indices " + e.getA() + " and " + e.getB());
+            updateStatus("Comparing " + displayArray[e.getA()] + " and " + displayArray[e.getB()]);
             panel.repaint();
             sleep(currentDelay);
         }
         else if (event instanceof SwapEvent) {
             SwapEvent e = (SwapEvent) event;
-            updateStatus("Swapping " + displayArray[e.getA()] + " and " + displayArray[e.getB()]);
+            int a = e.getA();
+            int b = e.getB();
+            updateStatus("Swapping " + displayArray[a] + " and " + displayArray[b]);
 
             // Animation
-            panel.startSwapAnimation(e.getA(), e.getB());
+            panel.startSwapAnimation(a, b);
             int frames = 20;
             for (int i = 0; i <= frames; i++) {
                 if (this.dataVersion != startVersion) break;
@@ -290,21 +290,34 @@ public class SortingGUI extends JFrame implements IView {
             panel.stopAnimation();
 
             // Update local display state after animation
-            int temp = displayArray[e.getA()];
-            displayArray[e.getA()] = displayArray[e.getB()];
-            displayArray[e.getB()] = temp;
+            int temp = displayArray[a];
+            displayArray[a] = displayArray[b];
+            displayArray[b] = temp;
+
+            // Update sorted array
+            boolean tempSorted = sortedFlags[a];
+            sortedFlags[a] = sortedFlags[b];
+            sortedFlags[b] = tempSorted;
 
             panel.updateState(e.getA(), e.getB(), Theme.BOX_SWAP);
         }
         else if (event instanceof MarkEvent) {
             MarkEvent e = (MarkEvent) event;
-            if (e.getA() < displayArray.length) {
-                panel.updateState(e.getA(), e.getA(), Theme.BOX_SORTED);
-                updateStatus(e.getMessage());
-                if (e.getType() == MarkEventType.Sorted) markAsSorted(e.getA());
-                panel.repaint();
-                sleep(currentDelay);
+            int a = e.getA();
+            if (a < displayArray.length && a >= 0) {
+                switch (e.getType()){
+                    case Sorted -> {
+                        panel.updateState(a, a, Theme.BOX_SORTED);
+                        markAsSorted(a);
+                    }
+                    case Highlight -> {
+                        panel.updateState(a, a, Theme.BOX_HIGHLIGHT);
+                    }
+                }
             }
+            updateStatus(e.getMessage());
+            panel.repaint();
+            sleep(currentDelay);
         }
 
         if (isPaused) {
@@ -364,13 +377,23 @@ public class SortingGUI extends JFrame implements IView {
     // Visualizer Component
 
     private class VisualizerPanel extends JPanel {
-        private int idx1 = -1, idx2 = -1;
-        private Color activeColor = Theme.BOX_DEFAULT;
-        private boolean isAnimating = false;
-        private int swapIdx1 = -1, swapIdx2 = -1;
-        private float progress = 0f;
+        private int idx1, idx2;
+        private Color activeColor;
+        private boolean isAnimating;
+        private int swapIdx1, swapIdx2;
+        private float progress;
 
-        public VisualizerPanel() { setOpaque(false); }
+        public VisualizerPanel() { setOpaque(false); reset(); }
+
+        public void reset(){
+            idx1 = -1;
+            idx2 = -1;
+            activeColor = Theme.BOX_DEFAULT;
+            isAnimating = false;
+            swapIdx1 = -1;
+            swapIdx2 = -1;
+            progress = 0f;
+        }
 
         public void updateState(int a, int b, Color c) {
             this.idx1 = a; this.idx2 = b; this.activeColor = c;
@@ -431,8 +454,8 @@ public class SortingGUI extends JFrame implements IView {
 
                 // Coloring
                 if (!isAnimating) {
-                    if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
-                    else if (i == idx1 || i == idx2) boxColor = activeColor;
+                    if (i == idx1 || i == idx2) boxColor = activeColor;
+                    else if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
                 } else if (i != swapIdx1 && i != swapIdx2) {
                     if (sortedFlags != null && sortedFlags[i]) boxColor = Theme.BOX_SORTED;
                 }

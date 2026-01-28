@@ -18,14 +18,14 @@ public class HeapSort extends SortingAlgorithm{
 
     // Get the index of the parent node of the current node
     private int parentNode(int node){
-        return (int)Math.floor((node - 1) / 2);
+        return (int)Math.floor((double) (node - 1) / 2);
     }
 
-    // Convert the given array from the first to the last index into a heap
-    // Heapifies the array from the given root node downwards
-    public int[] heapify(int[] array, int first, int last, int root)
+    // Convert the given numbers from the first to the last index into a heap
+    // Heapifies the numbers from the given root node downwards
+    public int[] heapify(int[] numbers, int first, int last, int root)
     {
-        highlight(root, String.format("Checking heap with root %d", array[root]));
+        highlight(root, String.format("Checking heap with root %d", numbers[root]));
 
         int largest = Integer.MIN_VALUE; 
         
@@ -34,7 +34,7 @@ public class HeapSort extends SortingAlgorithm{
         int right = rightChildNode(root);
 
         // Check if the left child exists and is larger than the root
-        if (left <= last && (compare(left, root) && array[left] > array[root])){
+        if (left <= last && (compare(left, root) && numbers[left] > numbers[root])){
             largest = left;
         }
         else{
@@ -42,52 +42,50 @@ public class HeapSort extends SortingAlgorithm{
         }
 
         // Check if the right child exists and is larger than the previous largest value
-        if (right <= last && (compare(right, largest) && array[right] > array[largest])){
+        if (right <= last && (compare(right, largest) && numbers[right] > numbers[largest])){
             largest = right;
         }
 
         // Swap the largest value with the root
         if (largest != root){
             swap(root, largest);
-            int temp = array[root];
-            array[root] = array[largest];
-            array[largest] = temp;
+            int temp = numbers[root];
+            numbers[root] = numbers[largest];
+            numbers[largest] = temp;
 
             // After the swap, make sure the heap where the larges value previously was is still  in order
-            return heapify(array, first, last, largest);
+            return heapify(numbers, first, last, largest);
         }
 
-        return array;
+        return numbers;
     }
 
     public int[] sort(){
-        int[] array = numbers.clone();
-
         // Get the last non leaf node element of the heap
-        int root = parentNode(array.length);
+        int root = parentNode(numbers.length);
         int first = 0;
-        int last = array.length - 1;
+        int last = numbers.length - 1;
 
         // Loop over all non leaf node elements and build the heap
         for (int i = root; i >= 0; i--){
-            heapify(array, first, last, i);
+            heapify(numbers, first, last, i);
         }
 
         // Loop over all elements of the heap
         for (int i = last; i>first;i--){
             // Swap the current root with the last element of the non sorted heap
             swap(first, i);
-            int temp = array[first];
-            array[first] = array[i];
-            array[i] = temp;
+            int temp = numbers[first];
+            numbers[first] = numbers[i];
+            numbers[i] = temp;
 
             sorted(i);
             // Rebuild the heap but ignore the new last value
             // This element is already sorted
-            heapify(array, first, i-1, first);
+            heapify(numbers, first, i-1, first);
         }
         sorted(0);
-        return array;
+        return numbers;
     }
 
 }

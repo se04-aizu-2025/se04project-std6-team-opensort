@@ -12,13 +12,15 @@ public class TestEngine {
 
     public static class TestResult{
         public String algorithmName;
+        public String[] labels;
         public boolean[] testsPassed;
         public long[] executionTimes;
         public int[] compareCounts;
         public int[] swapCounts;
 
-        public TestResult(String algorithmName, boolean[] testsPassed, long[] executionTimes, int[] compareCounts, int[] swapCounts){
+        public TestResult(String algorithmName, String[] labels, boolean[] testsPassed, long[] executionTimes, int[] compareCounts, int[] swapCounts){
             this.algorithmName = algorithmName;
+            this.labels = labels;
             this.testsPassed = testsPassed;
             this.executionTimes = executionTimes;
             this.compareCounts = compareCounts;
@@ -60,10 +62,9 @@ public class TestEngine {
         public void run(){}
     }
 
-    public boolean runTest(SortingAlgorithm algorithm){
-        int[] arr = algorithm.sort();
-        for(int i = 0; i < arr.length-1; i++){
-            if (arr[i] > arr[i+1]){
+    public boolean checkSorted(int[] result){
+        for(int i = 0; i < result.length-1; i++){
+            if (result[i] > result[i+1]){
                 return false;
             }
         }
@@ -72,6 +73,7 @@ public class TestEngine {
 
     public TestResult runTestsForAlgorithm(int algorithmIndex, TestData[] testCases){
         String algorithmName = AlgorithmList. algorithms[algorithmIndex].name;
+        String[] labels = new String[testCases.length];
         boolean[] results = new boolean[testCases.length];
         long[] executionTimes = new long[testCases.length];
         int[] compareCounts = new int[testCases.length];
@@ -79,20 +81,24 @@ public class TestEngine {
         EventCounter counter = new EventCounter();
 
         for (int j = 0; j < testCases.length; j++) {
+            TestData testCase = testCases[j];
+            labels[j] = testCase.label;
             try {
                 counter.reset();
-                SortingAlgorithm algorithm = AlgorithmList.build(algorithmIndex, testCases[j].data.clone());
+                SortingAlgorithm algorithm = AlgorithmList.build(algorithmIndex, testCase.data.clone());
                 algorithm.addEventListener(counter);
 
                 long startTime = System.nanoTime();
-                boolean result = runTest(algorithm);
+                int[] result = algorithm.sort();
                 long endTime = System.nanoTime();
+                boolean sorted = checkSorted(result);
 
-                results[j] = result;
+                results[j] = sorted;
                 executionTimes[j] = endTime - startTime;
                 compareCounts[j] = counter.compareCount;
                 swapCounts[j] = counter.swapCount;
-            } catch (Exception e) {
+            // Also catch StackOverflowError in case of recursive sorting algorithms
+            } catch (Exception | StackOverflowError _) {
                 results[j] = false;
                 executionTimes[j] = 0;
                 compareCounts[j] = 0;
@@ -100,7 +106,7 @@ public class TestEngine {
             }
         }
 
-        return new TestResult(algorithmName, results, executionTimes, compareCounts, swapCounts);
+        return new TestResult(algorithmName, labels, results, executionTimes, compareCounts, swapCounts);
     }
 
     public TestResult[] runAll(){
@@ -109,8 +115,8 @@ public class TestEngine {
 
     public TestResult[] runAll(int arraySize){
         TestData[] testCases = {
-                new TestData("Sorted", generator.generateSorted(arraySize)),
                 new TestData("Reverse", generator.generateReverseSorted(arraySize)),
+                new TestData("Sorted", generator.generateSorted(arraySize)),
                 new TestData("Random", generator. generateRandom(arraySize, 1, 50))
         };
 
@@ -137,14 +143,12 @@ public class TestEngine {
             System.out.println("\nAlgorithm: " + result.algorithmName);
             System.out.println("-".repeat(90));
 
-            String[] testNames = {"Sorted", "Reverse", "Random"};
-
             for(int i = 0; i < result.testsPassed.length; i++){
                 String status = result.testsPassed[i] ? "True" : "False";
                 double timeMs = result.executionTimes[i] / 1_000_000.0;
 
                 System.out.printf("  %-12s %s  |  Time: %8.3f ms  |  Compares: %7d  |  Swaps: %7d%n",
-                        testNames[i] + ":",
+                        result.labels[i] + ":",
                         status,
                         timeMs,
                         result.compareCounts[i],

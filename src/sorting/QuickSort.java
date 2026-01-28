@@ -24,6 +24,15 @@ public class QuickSort extends SortingAlgorithm{
         }
     }
 
+    private void swap_numbers(int a, int b){
+        if(a != b){
+            swap(a, b);
+            int temp = numbers[a];
+            numbers[a] = numbers[b];
+            numbers[b] = temp;
+        }
+    }
+
     private int partition(int low, int high){
         int pivot = numbers[high];
         highlight(high, String.format("Chose %d as the pivot element", pivot));
@@ -32,17 +41,10 @@ public class QuickSort extends SortingAlgorithm{
         for (int j = low; j < high; j++){
             if (compare(j, high) && numbers[j] < pivot) {
                 i++;
-                swap(i, j);
-                int temp = numbers[i];
-                numbers[i] = numbers[j];
-                numbers[j] = temp;
+                swap_numbers(i, j);
             }
         }
-
-        swap(i + 1, high);
-        int temp = numbers[i + 1];
-        numbers[i + 1] = numbers[high];
-        numbers[high] = temp;
+        swap_numbers(i + 1, high);
 
         return i + 1;
     }

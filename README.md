@@ -5,13 +5,15 @@ intended as a programming or algorithmic teaching tool.
 
 ## Prerequisites
 The project was developed and tested using JDK 25.
-An installation of this version of java or newer is recommended in order to build and run the software.
+An installation of this version of java or newer is required in order to build and run the software.
+To check the currently installed java version, run ```java --version``` and ```javac --version```.
 
 # Getting started
 This section describes how to build and launch the software.
 
 ## Building
-To be done
+Depending on your platform, run the __build.sh__, __build.bat__ or __build.ps1__ file.  
+This will create a jar file called __opensort.jar__.
 
 ## Running
 The software is distributed as a .jar file.  
@@ -19,14 +21,15 @@ It can be run from the command line using the following command: ``java -jar ope
 By providing the subcommand _help_, the usage of the software will be explained.
 ```
 user@pc % java -jar opensort.jar help
-Usage: java -jar opensort.jar [COMMAND] [ARRAY]
+Usage: java -jar opensort.jar [COMMAND] [ARRAY | LENGTH]
 
 Commands:
 If no command is provided, the GUI will be launched.
 
     test
         Run testcases for all available sorting algorithms and print the result to the command line.
-        This command ignores the ARRAY parameter.
+        This command uses the second LENGTH parameter.
+        This parameter indicates how long the test array should be. The default length is 100.
     cui
         Launch the CUI.
         Uses the ARRAY if provided.
