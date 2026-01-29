@@ -26,6 +26,8 @@ public class Controller implements IController{
     // The current algorithm
     private SortingAlgorithm algorithm;
 
+    private Thread sortingThread;
+
     // Create a new controller with the given view
     public Controller(IView view){
         this.view = view;
@@ -57,7 +59,18 @@ public class Controller implements IController{
             algorithm.removeEventListener(view);
         }
 
-        // Create new Algorithm, abandon old, still running algorithm
+        if(sortingThread != null && sortingThread.isAlive()){
+            // Interrupt the sorting thread to make sure it is not waiting on any queues
+            sortingThread.interrupt();
+            try {
+                // Wait for the sorting to finish
+                // Waits no longer than 2 seconds
+                // This makes sure the thread was successfully interrupted
+                sortingThread.join(1000);
+            } catch (InterruptedException _) {}
+        }
+
+        // Create new Algorithm, abandon old algorithm
         try {
             algorithm = AlgorithmList.build(algorithmID, currentArray.clone());
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
@@ -71,12 +84,13 @@ public class Controller implements IController{
         algorithm.addEventListener(view);
 
         // Start the new sorting algorithm
-        new Thread(new Runnable() {
+        sortingThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 algorithm.sort();
             }
-        }).start();
+        });
+        sortingThread.start();
     }
 
     @Override

@@ -41,19 +41,20 @@ You can change the data at any time using the **Settings** menu at the top:
 Computers sort very fast, but humans see slowly. To fix this, we use a **"Queue"** system.
 1.  **The Sorter:** The algorithm calculates a step (like a swap). It puts this step into a **Line**.
 2.  **The Painter:** The screen takes the step from the Line and draws it.
-3.  **The Rule:** The Line is very short (Capacity 1).
-    * If the Painter is busy moving a block, the Sorter **must wait**.
+3.  **The Rule:** The Line is very short (Capacity 10).
+    * If the Line is full, the Sorter **must wait**.
     * This keeps the speed perfect and prevents crashing.
 
 ## 4) Visual Output
 The GUI uses **Colors** to show what is happening to the array.
 
-| Color      | Description                                           |
-|------------|-------------------------------------------------------|
-| **Blue** | **Default.** The number is untouched.                 |
-| **Orange** | **Compare.** The algorithm is looking at these two numbers to see which is bigger. |
-| **Red** | **Swap.** The two numbers are changing places.        |
-| **Green** | **Sorted.** This number is in its final, correct place. |
+| Color         | Description                                                                        |
+|---------------|------------------------------------------------------------------------------------|
+| **Blue**      | **Default.** The number is untouched.                                              |
+| **Dark Blue** | **Highlight.** The number is being highlighted with a message.                     |
+| **Orange**    | **Compare.** The algorithm is looking at these two numbers to see which is bigger. |
+| **Red**       | **Swap.** The two numbers are changing places.                                     |
+| **Green**     | **Sorted.** This number is in its final, correct place.                            |
 
 ### Smooth Movement
 Unlike the CUI, the GUI does not just print the array.

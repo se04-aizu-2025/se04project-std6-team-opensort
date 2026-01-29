@@ -16,7 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // Simple console view
 public class ConsoleView implements IView{
@@ -43,12 +46,12 @@ public class ConsoleView implements IView{
     private String[] algorithms = {};
 
     // Events that need to be processed
-    private final ConcurrentLinkedQueue<SortEvent> eventsToProcess = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<SortEvent> eventsToProcess = new ArrayBlockingQueue<>(10);
 
     private boolean running = true;
     private Scanner scanner;
 
-    private final List<IController> viewEventListeners = new ArrayList<>();
+    private final List<IController> viewEventListeners = new CopyOnWriteArrayList<>();
 
     // Print the current state of the array
     private void printArray(){
@@ -87,13 +90,18 @@ public class ConsoleView implements IView{
 
     @Override
     public void onSortEvent(SortEvent event) {
-        eventsToProcess.add(event);
+        try {
+            eventsToProcess.put(event);
+        } catch (InterruptedException e) {
+            // Reset the interrupt flag for the thread
+            Thread.currentThread().interrupt();
+        }
     }
 
     // Function to handle a given sort event
     private void handleEvent(SortEvent event){
 
-        // When a new event is processed, remove all non permanent marks
+        // When a new event is processed, remove all non-permanent marks
         for(int i = 0; i < marks.length; i++){
             // Re-mark all sorted elements
             // Clear al other marks
@@ -297,7 +305,18 @@ Available commands:
                     if(nextEvent != null){
                         handleEvent(nextEvent);
                     } else {
-                        System.out.println("Nothing to do...");
+                        boolean allSorted = true;
+                        for(boolean s : sorted){
+                            if(!s){
+                                allSorted = false;
+                                break;
+                            }
+                        }
+                        if(allSorted){
+                            System.out.println("Array is sorted.");
+                        } else {
+                            System.out.println("Nothing to do...");
+                        }
                     }
                     break;
                 // Print the user help
