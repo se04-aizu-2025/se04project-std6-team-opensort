@@ -132,5 +132,6 @@ public class Controller implements IController{
             }
         }
         view.removeEventListener(this);
+        sortingThread.interrupt();
     }
 }
