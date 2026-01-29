@@ -2,6 +2,8 @@ package com.opensort.view;
 
 import com.opensort.controller.IController;
 import com.opensort.sorting.events.*;
+import com.opensort.utils.InputException;
+import com.opensort.utils.InputHelper;
 import com.opensort.view.events.*;
 
 import javax.swing.*;
@@ -163,20 +165,25 @@ public class SortingGUI extends JFrame implements IView {
     }
 
     private boolean promptForCustomData() {
-        String input = JOptionPane.showInputDialog(this, "Enter numbers e g five one four");
-        if (input != null && !input.trim().isEmpty()) {
-            try {
-                String[] parts = input.split(",");
-                int[] newArr = new int[parts.length];
-                for (int i = 0; i < parts.length; i++) newArr[i] = Integer.parseInt(parts[i].trim());
-                fireViewEvent(new ArrayChangeEvent(newArr));
-                resetControls();
-                return true;
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid number format", "Error", JOptionPane.ERROR_MESSAGE);
+        String input = "";
+        boolean inputCorrect = false;
+        do {
+            input = JOptionPane.showInputDialog(this, "Enter numbers e g five one four");
+            if(input != null && !input.isEmpty()){
+                try {
+                    int[] newArr = InputHelper.tryGetArrayFromString(input);
+                    fireViewEvent(new ArrayChangeEvent(newArr));
+                    resetControls();
+                    inputCorrect = true;
+                } catch (InputException ex) {
+                    JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                break;
             }
-        }
-        return false;
+        } while(!inputCorrect);
+
+        return inputCorrect;
     }
 
     // IView Implementation

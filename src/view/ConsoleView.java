@@ -5,6 +5,8 @@ import com.opensort.sorting.events.CompareEvent;
 import com.opensort.sorting.events.MarkEvent;
 import com.opensort.sorting.events.SortEvent;
 import com.opensort.sorting.events.SwapEvent;
+import com.opensort.utils.InputException;
+import com.opensort.utils.InputHelper;
 import com.opensort.view.events.AlgorithmChangeEvent;
 import com.opensort.view.events.ArrayChangeEvent;
 import com.opensort.view.events.ExitEvent;
@@ -180,26 +182,21 @@ public class ConsoleView implements IView{
 
     // Get a new array from user input
     private int[] getArrayFromUser(){
-        int[] newArray;
+        int[] newArray = new int[0];
         boolean inputOK;
         // Repeat until the user input is ok
         do {
             inputOK = true;
 
             System.out.print("Please enter a ',' separated list of integers: ");
-            String[] list = scanner.nextLine().split(",");
+            String input = scanner.nextLine();
 
-            // Try to convert the individual numbers
-            newArray = new int[list.length];
-            for (int i = 0; i < list.length; i++) {
-                String number = list[i];
-                try {
-                    newArray[i] = Integer.parseInt(number);
-                } catch (NumberFormatException _) {
-                    // Print conversion errors and mark the input as not ok
-                    System.out.printf("Error at index %d. '%s' is not a number.\n", i, number);
-                    inputOK = false;
-                }
+            try {
+                newArray = InputHelper.tryGetArrayFromString(input);
+            } catch (InputException e) {
+                // Print conversion errors and mark the input as not ok
+                System.out.println(e.getMessage());
+                inputOK = false;
             }
         } while (!inputOK);
 
