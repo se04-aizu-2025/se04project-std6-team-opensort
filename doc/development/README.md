@@ -36,7 +36,7 @@ array[a] = array[b];
 array[b] = temp;
 ```
 
-#### boolean compare(a, b) : boolean
+#### boolean compare(a, b)
 Indicate that two elements are being compared.
 Returns a boolean (always true) so that it can be used in line.
 Be mindful of short circuit evaluation.
@@ -60,6 +60,19 @@ for(int i = 0; i < n; i++) {
         // Sort element at index i
     }
     sorted(i);
+}
+```
+
+### void highlight(a, message)
+Highlights the element at index a with a message.
+```
+void quicksort(int[] array, int start, int stop) {
+    int pivot = partition(array, start, stop)
+    
+    hightlight(pivot, "Array partitioned around pivot element");
+    
+    quicksort(array, start, pivot - 1);
+    quicksort(array, pivot + 1, stop);
 }
 ```
 
