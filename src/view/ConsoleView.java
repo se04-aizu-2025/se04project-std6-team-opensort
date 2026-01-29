@@ -5,6 +5,8 @@ import com.opensort.sorting.events.CompareEvent;
 import com.opensort.sorting.events.MarkEvent;
 import com.opensort.sorting.events.SortEvent;
 import com.opensort.sorting.events.SwapEvent;
+import com.opensort.utils.InputException;
+import com.opensort.utils.InputHelper;
 import com.opensort.view.events.AlgorithmChangeEvent;
 import com.opensort.view.events.ArrayChangeEvent;
 import com.opensort.view.events.ExitEvent;
@@ -14,7 +16,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // Simple console view
 public class ConsoleView implements IView{
@@ -41,12 +46,12 @@ public class ConsoleView implements IView{
     private String[] algorithms = {};
 
     // Events that need to be processed
-    private final ConcurrentLinkedQueue<SortEvent> eventsToProcess = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<SortEvent> eventsToProcess = new ArrayBlockingQueue<>(10);
 
     private boolean running = true;
     private Scanner scanner;
 
-    private final List<IController> viewEventListeners = new ArrayList<>();
+    private final List<IController> viewEventListeners = new CopyOnWriteArrayList<>();
 
     // Print the current state of the array
     private void printArray(){
@@ -85,13 +90,18 @@ public class ConsoleView implements IView{
 
     @Override
     public void onSortEvent(SortEvent event) {
-        eventsToProcess.add(event);
+        try {
+            eventsToProcess.put(event);
+        } catch (InterruptedException e) {
+            // Reset the interrupt flag for the thread
+            Thread.currentThread().interrupt();
+        }
     }
 
     // Function to handle a given sort event
     private void handleEvent(SortEvent event){
 
-        // When a new event is processed, remove all non permanent marks
+        // When a new event is processed, remove all non-permanent marks
         for(int i = 0; i < marks.length; i++){
             // Re-mark all sorted elements
             // Clear al other marks
@@ -180,26 +190,21 @@ public class ConsoleView implements IView{
 
     // Get a new array from user input
     private int[] getArrayFromUser(){
-        int[] newArray;
+        int[] newArray = new int[0];
         boolean inputOK;
         // Repeat until the user input is ok
         do {
             inputOK = true;
 
             System.out.print("Please enter a ',' separated list of integers: ");
-            String[] list = scanner.nextLine().split(",");
+            String input = scanner.nextLine();
 
-            // Try to convert the individual numbers
-            newArray = new int[list.length];
-            for (int i = 0; i < list.length; i++) {
-                String number = list[i];
-                try {
-                    newArray[i] = Integer.parseInt(number);
-                } catch (NumberFormatException _) {
-                    // Print conversion errors and mark the input as not ok
-                    System.out.printf("Error at index %d. '%s' is not a number.\n", i, number);
-                    inputOK = false;
-                }
+            try {
+                newArray = InputHelper.tryGetArrayFromString(input);
+            } catch (InputException e) {
+                // Print conversion errors and mark the input as not ok
+                System.out.println(e.getMessage());
+                inputOK = false;
             }
         } while (!inputOK);
 
@@ -300,7 +305,18 @@ Available commands:
                     if(nextEvent != null){
                         handleEvent(nextEvent);
                     } else {
-                        System.out.println("Nothing to do...");
+                        boolean allSorted = true;
+                        for(boolean s : sorted){
+                            if(!s){
+                                allSorted = false;
+                                break;
+                            }
+                        }
+                        if(allSorted){
+                            System.out.println("Array is sorted.");
+                        } else {
+                            System.out.println("Nothing to do...");
+                        }
                     }
                     break;
                 // Print the user help

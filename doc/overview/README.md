@@ -19,7 +19,7 @@ The controller manages the view and the model and makes sure that the view is li
 It also responds to events from the view. The handling of these events is described in the images below.
 
 ![Array change event](ArrayChangeEvent.svg)
-This image shows how an array change event is processed by the controller
+This image shows how an array change event is processed by the controller.
 
 ![Algorithm change event](AlgorithmChangeEvent.svg)
-This image shows how an algorithm change event is processed by the controller
+This image shows how an algorithm change event is processed by the controller.

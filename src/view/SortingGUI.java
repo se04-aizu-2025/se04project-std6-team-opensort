@@ -2,6 +2,8 @@ package com.opensort.view;
 
 import com.opensort.controller.IController;
 import com.opensort.sorting.events.*;
+import com.opensort.utils.InputException;
+import com.opensort.utils.InputHelper;
 import com.opensort.view.events.*;
 
 import javax.swing.*;
@@ -9,7 +11,10 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * A robust efficient and user friendly Swing GUI for visualizing sorting algorithms
@@ -50,10 +55,10 @@ public class SortingGUI extends JFrame implements IView {
     // NOTE displayArray is the visual source of truth preventing threading artifacts
     private int[] displayArray;
     private boolean[] sortedFlags;
-    private final List<IController> listeners = new ArrayList<>();
+    private final List<IController> listeners = new CopyOnWriteArrayList<>();
 
     // Queue and Threading
-    private final ConcurrentLinkedQueue<SortEvent> eventQueue = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<SortEvent> eventQueue = new ArrayBlockingQueue<SortEvent>(10);
     private final Thread eventProcessor;
     private volatile int dataVersion = 0;
 
@@ -163,20 +168,25 @@ public class SortingGUI extends JFrame implements IView {
     }
 
     private boolean promptForCustomData() {
-        String input = JOptionPane.showInputDialog(this, "Enter numbers e g five one four");
-        if (input != null && !input.trim().isEmpty()) {
-            try {
-                String[] parts = input.split(",");
-                int[] newArr = new int[parts.length];
-                for (int i = 0; i < parts.length; i++) newArr[i] = Integer.parseInt(parts[i].trim());
-                fireViewEvent(new ArrayChangeEvent(newArr));
-                resetControls();
-                return true;
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Invalid number format", "Error", JOptionPane.ERROR_MESSAGE);
+        String input = "";
+        boolean inputCorrect = false;
+        do {
+            input = JOptionPane.showInputDialog(this, "Enter numbers e g five one four");
+            if(input != null && !input.isEmpty()){
+                try {
+                    int[] newArr = InputHelper.tryGetArrayFromString(input);
+                    fireViewEvent(new ArrayChangeEvent(newArr));
+                    resetControls();
+                    inputCorrect = true;
+                } catch (InputException ex) {
+                    JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                break;
             }
-        }
-        return false;
+        } while(!inputCorrect);
+
+        return inputCorrect;
     }
 
     // IView Implementation
@@ -231,7 +241,12 @@ public class SortingGUI extends JFrame implements IView {
 
     @Override
     public void onSortEvent(SortEvent event) {
-        eventQueue.add(event);
+        try {
+            eventQueue.put(event);
+        } catch (InterruptedException _) {
+            // In case the thread was interrupted, re set the interrupt flag
+            Thread.currentThread().interrupt();
+        }
     }
 
     private void processEventQueue() {
@@ -273,6 +288,7 @@ public class SortingGUI extends JFrame implements IView {
             sleep(currentDelay);
         }
         else if (event instanceof SwapEvent) {
+            int currentVersion = dataVersion;
             SwapEvent e = (SwapEvent) event;
             int a = e.getA();
             int b = e.getB();
@@ -289,17 +305,20 @@ public class SortingGUI extends JFrame implements IView {
             }
             panel.stopAnimation();
 
-            // Update local display state after animation
-            int temp = displayArray[a];
-            displayArray[a] = displayArray[b];
-            displayArray[b] = temp;
+            // Make sure the array was not updated during the animation
+            if(currentVersion == dataVersion){
+                // Update local display state after animation
+                int temp = displayArray[a];
+                displayArray[a] = displayArray[b];
+                displayArray[b] = temp;
 
-            // Update sorted array
-            boolean tempSorted = sortedFlags[a];
-            sortedFlags[a] = sortedFlags[b];
-            sortedFlags[b] = tempSorted;
+                // Update sorted array
+                boolean tempSorted = sortedFlags[a];
+                sortedFlags[a] = sortedFlags[b];
+                sortedFlags[b] = tempSorted;
 
-            panel.updateState(e.getA(), e.getB(), Theme.BOX_SWAP);
+                panel.updateState(e.getA(), e.getB(), Theme.BOX_SWAP);
+            }
         }
         else if (event instanceof MarkEvent) {
             MarkEvent e = (MarkEvent) event;

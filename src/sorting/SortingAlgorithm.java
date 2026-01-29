@@ -5,6 +5,7 @@ import com.opensort.view.IView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 // Abstract class to represent a sorting algorithm
 // This is the model of the software
@@ -14,7 +15,7 @@ public abstract class SortingAlgorithm{
     int[] numbers;
 
     // Implementations of IView to notify when a sorting event is fired
-    List<IView> eventListeners = new ArrayList<IView>();
+    List<IView> eventListeners = new CopyOnWriteArrayList<>();
 
     public SortingAlgorithm(int[] numbers){
         this.numbers = numbers;
@@ -23,16 +24,16 @@ public abstract class SortingAlgorithm{
     // Implement the sorting algorithm
     public abstract  int[] sort();
 
-    public synchronized void addEventListener(IView listener){
+    public void addEventListener(IView listener){
         eventListeners.add(listener);
     }
 
-    public synchronized void removeEventListener(IView listener){
+    public void removeEventListener(IView listener){
         eventListeners.remove(listener);
     }
 
     // Broadcast an event to all current event listeners
-    private synchronized void fireEvent(SortEvent event){
+    private void fireEvent(SortEvent event){
         for(IView listener : eventListeners){
             listener.onSortEvent(event);
         }

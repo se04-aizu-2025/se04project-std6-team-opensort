@@ -1,6 +1,8 @@
 package com.opensort;
 import com.opensort.controller.Controller;
 import com.opensort.controller.IController;
+import com.opensort.utils.InputException;
+import com.opensort.utils.InputHelper;
 import com.opensort.view.IView;
 import com.opensort.view.ConsoleView;
 import com.opensort.testing.TestEngine;
@@ -41,27 +43,6 @@ Examples:
 """);
     }
 
-    // Try to extract an integer array from a given string
-    // The integers need to be ',' separated
-    private static int[] tryGetArrayFromString(String s) throws Exception{
-        String[] list = s.split(",");
-
-        // Try to convert the individual numbers
-        int[] newArray = new int[list.length];
-        for (int i = 0; i < list.length; i++) {
-            String number = list[i];
-            try {
-                newArray[i] = Integer.parseInt(number);
-            } catch (NumberFormatException _) {
-                // Return error in case the input is invalid
-                throw new Exception(String.format("Error at index %d: '%s' is not a number.\n", i, number));
-            }
-        }
-
-        // Return the array of numbers
-        return newArray;
-    }
-
     public static void main(String[] args){
 
         // Exit the software if too many arguments where provided
@@ -79,8 +60,8 @@ Examples:
         if(args.length > 0) {
             try {
                 // Try to interpret the last argument as an array
-                initialArray = tryGetArrayFromString(args[args.length - 1]);
-            } catch (Exception _) {}
+                initialArray = InputHelper.tryGetArrayFromString(args[args.length - 1]);
+            } catch (InputException _) {}
         }
 
         // Check the subcommand if either:
