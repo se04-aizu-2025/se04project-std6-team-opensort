@@ -7,7 +7,7 @@ Write-Host "Collecting source files..."
 
 # Compile using the @sources.txt list
 Write-Host "Building application..."
-javac -d build @sources.txt
+javac -d build "@sources.txt"
 
 # Build the JAR file
 Write-Host "Creating jar file..."
